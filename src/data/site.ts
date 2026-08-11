@@ -68,9 +68,9 @@ export const STATIC_PAGES: Record<
     primaryKeyword: '机场评测',
   },
   '/directory/': {
-    title: '机场导航:品牌档案对照表 — HaiwaiWiki',
+    title: '机场导航:16 家服务商公开信息对照 — HaiwaiWiki',
     description:
-      '机场导航:以官方公开资料整理的品牌档案库,按起步价格、付款周期、线路宣称对照浏览。所有字段注明来源,与评测页互为参照。',
+      '机场导航:整理 16 家品牌官网或公开页面能核验的信息——起步价格、套餐流量、付款周期、官方宣称的线路类型。不做速度或稳定性排名,无法核验的字段统一标注暂未核验。',
     primaryKeyword: '机场导航',
   },
   '/tutorial/': {

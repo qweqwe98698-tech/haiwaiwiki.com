@@ -1,0 +1,68 @@
+---
+/**
+ * 真实测速图表 — 预留组件,当前未在任何页面挂载。
+ *
+ * 启用条件(缺一不可):
+ *   1. src/data/speed-tests.json 的 tests 数组里有该品牌的真实记录;
+ *   2. 记录包含 testedAt / testWindow / environment / method / limitations 全部字段;
+ *   3. 编辑规范里的核验流程已走完(见 /about/editorial/)。
+ *
+ * 在满足条件之前,不要在任何 .md/.mdx/.astro 里 import 本组件——
+ * 空数据不渲染占位图表,避免任何"看起来像测过"的视觉暗示。
+ */
+import speedTestsRaw from '../data/speed-tests.json';
+
+interface SpeedTestRecord {
+  brandId: string;
+  testedAt: string;
+  testWindow: string;
+  environment: { device: string; network: string; client: string; tool: string };
+  method: string;
+  samples: { node: string; region: string; latencyMs: number; downloadMbps: number }[];
+  limitations: string;
+}
+// 空数组时 JSON 推断为 never[],这里显式声明结构,数据填入后无需再改类型。
+const speedTests = speedTestsRaw as { tests: SpeedTestRecord[] };
+
+interface Props {
+  brandId: string;
+}
+const { brandId } = Astro.props;
+const test = speedTests.tests.find((t) => t.brandId === brandId);
+---
+
+{test && (
+  <figure class="my-8 border border-rule">
+    <figcaption class="border-b border-rule bg-paper-2 px-4 py-2.5">
+      <span class="text-xs font-semibold tracking-widest text-ink">本站实测 · 测速记录</span>
+      <span class="mt-1 block text-xs text-ink-2 leading-relaxed">
+        测试时间 {test.testedAt}({test.testWindow})· 设备 {test.environment.device} ·
+        网络 {test.environment.network} · 客户端 {test.environment.client} · 工具 {test.environment.tool}
+      </span>
+      <span class="mt-1 block text-xs text-ink-2">方法:{test.method}</span>
+    </figcaption>
+    <div class="overflow-x-auto">
+      <table class="w-full border-collapse text-sm">
+        <thead>
+          <tr>
+            <th class="border-b border-rule py-2 pr-4 text-left text-xs font-semibold">节点</th>
+            <th class="border-b border-rule py-2 pr-4 text-left text-xs font-semibold">地区</th>
+            <th class="border-b border-rule py-2 pr-4 text-left text-xs font-semibold">延迟</th>
+            <th class="border-b border-rule py-2 text-left text-xs font-semibold">下载速度</th>
+          </tr>
+        </thead>
+        <tbody>
+          {test.samples.map((s) => (
+            <tr>
+              <td class="border-b border-rule py-2 pr-4">{s.node}</td>
+              <td class="border-b border-rule py-2 pr-4">{s.region}</td>
+              <td class="border-b border-rule py-2 pr-4 tabular-nums">{s.latencyMs} ms</td>
+              <td class="border-b border-rule py-2 tabular-nums">{s.downloadMbps} Mbps</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <p class="border-t border-rule px-4 py-2 text-xs text-ink-2">局限说明:{test.limitations}</p>
+  </figure>
+)}

@@ -1,5 +1,5 @@
 {
-  "_note": "全部字段来自品牌方提供/官方页面公开资料,未经本站实测验证。pricePerGb 为 官方最低套餐价÷流量 的算术折算,仅供对照。featured/featuredRank 为商务合作展示位与展示顺序,不代表测速、质量或评测排名。",
+  "_note": "全部字段来自品牌方提供/公开资料,未经本站实测验证;「暂未核验」表示官方资料未标注且本站未确认,不自行推测补充。pricePerGb 为官方标价÷流量的算术折算。featured/featuredRank 为商务合作展示位与顺序,不代表测速、质量或评测排名。",
   "lastVerified": "2026-08",
   "brands": [
     {
@@ -23,7 +23,24 @@
         "订阅导入需联系客服"
       ],
       "featured": true,
-      "featuredRank": 1
+      "featuredRank": 1,
+      "devices": "暂未核验",
+      "refundPolicy": "暂未核验",
+      "statusPage": "暂未核验",
+      "clientSupport": "自研客户端(官方宣称);订阅导入需联系客服",
+      "sourceNote": "品牌方提供资料与官网页面",
+      "audience": "想要一家宣称运营较久、主打专线与双解锁宣称的综合型选择",
+      "publicPros": [
+        "宣称六年运营",
+        "IEPL 专线 + VLESS(官方宣称)",
+        "流媒体与 AI 双解锁宣称"
+      ],
+      "knownLimits": [
+        "付款周期未标注",
+        "订阅链接需联系客服获取",
+        "设备数与退款规则暂未核验"
+      ],
+      "verifyStatus": "官方资料 · 未实测"
     },
     {
       "id": "xingdaomeng",
@@ -45,7 +62,24 @@
         "订阅导入需联系客服"
       ],
       "featured": true,
-      "featuredRank": 2
+      "featuredRank": 2,
+      "devices": "暂未核验",
+      "refundPolicy": "暂未核验",
+      "statusPage": "暂未核验",
+      "clientSupport": "订阅导入需联系客服(官方宣称)",
+      "sourceNote": "品牌方提供资料与官网页面",
+      "audience": "接受年付预付、追求最低月均价的轻量用户",
+      "publicPros": [
+        "月均 ¥8 为 16 家最低标价",
+        "宣称六年运营",
+        "宣称支持不限时套餐"
+      ],
+      "knownLimits": [
+        "低价以一次付一年为前提",
+        "解锁范围未列具体清单",
+        "设备数与退款规则暂未核验"
+      ],
+      "verifyStatus": "官方资料 · 未实测"
     },
     {
       "id": "civetnet",
@@ -66,7 +100,24 @@
         "订阅导入需联系客服"
       ],
       "featured": true,
-      "featuredRank": 3
+      "featuredRank": 3,
+      "devices": "暂未核验",
+      "refundPolicy": "暂未核验",
+      "statusPage": "暂未核验",
+      "clientSupport": "订阅导入需联系客服(官方宣称)",
+      "sourceNote": "品牌方提供资料与官网页面",
+      "audience": "想先月付验证、再决定是否长期使用的谨慎型用户",
+      "publicPros": [
+        "16 家中少数官方明确月付",
+        "每 GB 折算约 ¥0.13,处于最低档",
+        "宣称支持不限时套餐"
+      ],
+      "knownLimits": [
+        "运营时间官方未标注",
+        "解锁范围未列具体清单",
+        "设备数与退款规则暂未核验"
+      ],
+      "verifyStatus": "官方资料 · 未实测"
     },
     {
       "id": "flycat",
@@ -87,7 +138,12 @@
         "自研客户端",
         "订阅导入需联系客服"
       ],
-      "featured": false
+      "featured": false,
+      "devices": "暂未核验",
+      "refundPolicy": "暂未核验",
+      "statusPage": "暂未核验",
+      "clientSupport": "自研客户端(官方宣称);订阅导入需联系客服",
+      "sourceNote": "品牌方提供资料与官网页面"
     },
     {
       "id": "v2yun",
@@ -107,7 +163,23 @@
         "智能负载均衡"
       ],
       "featured": true,
-      "featuredRank": 4
+      "featuredRank": 4,
+      "devices": "暂未核验",
+      "refundPolicy": "暂未核验",
+      "statusPage": "暂未核验",
+      "clientSupport": "官方资料未标注",
+      "sourceNote": "品牌方提供资料与官网页面",
+      "audience": "更看重入口线路优化与节点覆盖宣称的用户",
+      "publicPros": [
+        "宣称 2020 年开业",
+        "宣称节点覆盖 60+ 与三网优化"
+      ],
+      "knownLimits": [
+        "跨境线路类型未说明(未宣称专线)",
+        "解锁能力官方未作宣称",
+        "付款周期未标注"
+      ],
+      "verifyStatus": "官方资料 · 未实测"
     },
     {
       "id": "yuzou",
@@ -128,7 +200,12 @@
         "自研客户端",
         "订阅导入需联系客服"
       ],
-      "featured": false
+      "featured": false,
+      "devices": "暂未核验",
+      "refundPolicy": "暂未核验",
+      "statusPage": "暂未核验",
+      "clientSupport": "自研客户端(官方宣称);订阅导入需联系客服",
+      "sourceNote": "品牌方提供资料与官网页面"
     },
     {
       "id": "u1s1",
@@ -148,7 +225,12 @@
         "自研客户端",
         "订阅导入需联系客服"
       ],
-      "featured": false
+      "featured": false,
+      "devices": "暂未核验",
+      "refundPolicy": "暂未核验",
+      "statusPage": "暂未核验",
+      "clientSupport": "自研客户端(官方宣称);订阅导入需联系客服",
+      "sourceNote": "品牌方提供资料与官网页面"
     },
     {
       "id": "jilian",
@@ -168,7 +250,12 @@
         "自研客户端",
         "订阅导入需联系客服"
       ],
-      "featured": false
+      "featured": false,
+      "devices": "暂未核验",
+      "refundPolicy": "暂未核验",
+      "statusPage": "暂未核验",
+      "clientSupport": "自研客户端(官方宣称);订阅导入需联系客服",
+      "sourceNote": "品牌方提供资料与官网页面"
     },
     {
       "id": "quanqiu",
@@ -190,7 +277,12 @@
         "自研客户端",
         "订阅导入需联系客服"
       ],
-      "featured": false
+      "featured": false,
+      "devices": "暂未核验",
+      "refundPolicy": "暂未核验",
+      "statusPage": "暂未核验",
+      "clientSupport": "自研客户端(官方宣称);订阅导入需联系客服",
+      "sourceNote": "品牌方提供资料与官网页面"
     },
     {
       "id": "guangnianti",
@@ -212,7 +304,12 @@
         "自研客户端",
         "订阅导入需联系客服"
       ],
-      "featured": false
+      "featured": false,
+      "devices": "暂未核验",
+      "refundPolicy": "暂未核验",
+      "statusPage": "暂未核验",
+      "clientSupport": "自研客户端(官方宣称);订阅导入需联系客服",
+      "sourceNote": "品牌方提供资料与官网页面"
     },
     {
       "id": "yifan",
@@ -234,7 +331,12 @@
         "自研客户端",
         "订阅导入需联系客服"
       ],
-      "featured": false
+      "featured": false,
+      "devices": "暂未核验",
+      "refundPolicy": "暂未核验",
+      "statusPage": "暂未核验",
+      "clientSupport": "自研客户端(官方宣称);订阅导入需联系客服",
+      "sourceNote": "品牌方提供资料与官网页面"
     },
     {
       "id": "ermao",
@@ -256,7 +358,12 @@
         "自研客户端",
         "订阅导入需联系客服"
       ],
-      "featured": false
+      "featured": false,
+      "devices": "暂未核验",
+      "refundPolicy": "暂未核验",
+      "statusPage": "暂未核验",
+      "clientSupport": "自研客户端(官方宣称);订阅导入需联系客服",
+      "sourceNote": "品牌方提供资料与官网页面"
     },
     {
       "id": "sogo",
@@ -278,7 +385,12 @@
         "自研客户端",
         "订阅导入需联系客服"
       ],
-      "featured": false
+      "featured": false,
+      "devices": "暂未核验",
+      "refundPolicy": "暂未核验",
+      "statusPage": "暂未核验",
+      "clientSupport": "自研客户端(官方宣称);订阅导入需联系客服",
+      "sourceNote": "品牌方提供资料与官网页面"
     },
     {
       "id": "kosing",
@@ -299,7 +411,12 @@
         "自研客户端",
         "订阅导入需联系客服"
       ],
-      "featured": false
+      "featured": false,
+      "devices": "暂未核验",
+      "refundPolicy": "暂未核验",
+      "statusPage": "暂未核验",
+      "clientSupport": "自研客户端(官方宣称);订阅导入需联系客服",
+      "sourceNote": "品牌方提供资料与官网页面"
     },
     {
       "id": "sujie",
@@ -320,7 +437,12 @@
         "自研客户端",
         "订阅导入需联系客服"
       ],
-      "featured": false
+      "featured": false,
+      "devices": "暂未核验",
+      "refundPolicy": "暂未核验",
+      "statusPage": "暂未核验",
+      "clientSupport": "自研客户端(官方宣称);订阅导入需联系客服",
+      "sourceNote": "品牌方提供资料与官网页面"
     },
     {
       "id": "kuaili",
@@ -341,7 +463,12 @@
         "自研客户端",
         "订阅导入需联系客服"
       ],
-      "featured": false
+      "featured": false,
+      "devices": "暂未核验",
+      "refundPolicy": "暂未核验",
+      "statusPage": "暂未核验",
+      "clientSupport": "自研客户端(官方宣称);订阅导入需联系客服",
+      "sourceNote": "品牌方提供资料与官网页面"
     }
   ]
 }

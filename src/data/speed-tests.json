@@ -1,0 +1,21 @@
+{
+  "_status": "inactive",
+  "_note": "本文件是真实测速数据的预留结构,当前为空。仅当编辑部完成真实测试(固定设备/宽带/时段,可复现)后,才按下方 schema 填入数据并在 SpeedChart.astro 中启用渲染。不得填入无法追溯来源的数字;数据为空时全站不引用本文件,不生成任何测速图表。",
+  "_schema": {
+    "brandId": "对应 brands.json 的 id",
+    "testedAt": "YYYY-MM-DD,测试当天日期",
+    "testWindow": "测试时段,如 21:00-23:00(晚高峰)",
+    "environment": {
+      "device": "测试设备型号",
+      "network": "测试宽带运营商与带宽,如 电信 500M",
+      "client": "客户端名称与版本",
+      "tool": "测速工具名称与版本"
+    },
+    "method": "测试方法的一句话描述,如何选节点、测几次取什么值",
+    "samples": [
+      { "node": "节点名称(客户端内显示名)", "region": "地区", "latencyMs": "number,多次测量的代表值", "downloadMbps": "number" }
+    ],
+    "limitations": "本次测试的已知局限,如仅测单一时段/单一网络环境,不代表全天或其他地区表现"
+  },
+  "tests": []
+}

@@ -1,12 +1,14 @@
 ---
 /**
- * 合作展示位 — 顺序由 brands.json 的 featuredRank 决定,属于商务合作排序。
+ * 合作展示位 — 顺序由 brands.json 的 featuredRank 决定,属于商务合作排序,
  * 与本站的评测结论、价格对照表完全分离(见 /about/disclaimer/)。
+ * 每张卡片必须同时说明:适用人群、公开优势、已知限制、核验状态——
+ * 不得只展示卖点,制造"已验证"的印象。
  */
 import brandsData from '../data/brands.json';
 
 interface Props {
-  /** compact = 用于栏目页的紧凑版(不展开官方宣称) */
+  /** compact = 用于栏目页的紧凑版(仍保留四项要素,只是更简短)*/
   compact?: boolean;
   title?: string;
 }
@@ -21,11 +23,12 @@ const rel = 'nofollow sponsored noopener noreferrer';
 <section class="my-8">
   <div class="flex items-baseline justify-between gap-4 flex-wrap">
     <h2 class="text-xs tracking-widest text-ink-2 font-semibold">{title}</h2>
-    <p class="text-xs text-ink-2">核验时间 {brandsData.lastVerified}</p>
+    <p class="text-xs text-ink-2">核验日期 {brandsData.lastVerified}</p>
   </div>
   <p class="mt-1 text-xs text-ink-2 leading-relaxed">
-    以下为商务合作展示,<strong class="font-semibold text-ink">展示顺序由合作关系决定,不代表测速、质量或评测排名</strong>。
-    卖点为品牌方官方宣称,未经本站验证;链接为推广链接(<a href="/about/disclaimer/" class="underline underline-offset-2">披露</a>)。
+    以下为商务合作展示,<strong class="font-semibold text-ink">展示顺序由合作关系决定,不代表测速、质量或评测排名</strong>——
+    本站没有对这些品牌做过性能测试。「公开优势」一栏为品牌方官方宣称,<strong class="font-semibold text-ink">未经本站验证</strong>;
+    链接为推广链接(<a href="/about/disclaimer/" class="underline underline-offset-2">披露</a>)。
     {compact ? (
       <>客观对照请看<a href="/directory/" class="underline underline-offset-2">按每 GB 单价排序的档案表</a>。</>
     ) : (
@@ -41,11 +44,26 @@ const rel = 'nofollow sponsored noopener noreferrer';
           <a href={`/review/${b.id}/`} class="font-bold text-ink hover:text-seal">{b.name}</a>
         </div>
         <p class="mt-1.5 text-sm text-ink-2">{b.priceFrom}</p>
-        {!compact && (
-          <p class="mt-2 text-xs text-ink-2 leading-relaxed">
-            官方宣称:{b.claims.slice(0, 5).join(' · ')}
+
+        {b.audience && (
+          <p class="mt-2 text-xs text-ink leading-relaxed">
+            <span class="text-ink-2">适用人群:</span>{b.audience}
           </p>
         )}
+        {b.publicPros && (
+          <p class="mt-1.5 text-xs text-ink-2 leading-relaxed">
+            <span class="corner-label">公开优势</span>{b.publicPros.slice(0, compact ? 2 : 3).join('、')}
+          </p>
+        )}
+        {b.knownLimits && (
+          <p class="mt-1.5 text-xs text-ink-2 leading-relaxed">
+            <span class="corner-label">已知限制</span>{b.knownLimits.slice(0, compact ? 1 : 2).join('、')}
+          </p>
+        )}
+        <p class="mt-1.5 text-xs text-ink-2 font-medium">
+          核验状态:{b.verifyStatus ?? '官方资料 · 未实测'}
+        </p>
+
         {b.affCode && (
           <p class="mt-2 text-xs text-ink-2">
             优惠码 <code class="border border-rule bg-paper-2 px-1.5 py-0.5 rounded-sm text-ink">{b.affCode}</code>

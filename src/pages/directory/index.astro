@@ -6,17 +6,16 @@ import { STATIC_PAGES } from '../../data/site';
 import brandsData from '../../data/brands.json';
 import PriceGbChart from '../../components/PriceGbChart.astro';
 import ClaimsMatrix from '../../components/ClaimsMatrix.astro';
+import BrandFactsTable from '../../components/BrandFactsTable.astro';
+import BrandFilters from '../../components/BrandFilters.astro';
 import FeaturedBrands from '../../components/FeaturedBrands.astro';
 
 const meta = STATIC_PAGES['/directory/'];
-const { brands, lastVerified } = brandsData;
-const sorted = [...brands].sort((a, b) => a.priceNum / a.trafficGb - b.priceNum / b.trafficGb);
-const perGb = (b: (typeof brands)[number]) => (b.priceNum / b.trafficGb).toFixed(2);
+const { lastVerified } = brandsData;
 
 const jsonLd = [
   breadcrumbJsonLd([{ name: '首页', url: '/' }, { name: '机场导航', url: '/directory/' }]),
 ];
-const rel = 'nofollow sponsored noopener noreferrer';
 ---
 
 <BaseLayout title={meta.title} description={meta.description} path="/directory/" jsonLd={jsonLd}>
@@ -24,15 +23,16 @@ const rel = 'nofollow sponsored noopener noreferrer';
 
   <div class="mt-10 max-w-[820px]">
     <p class="index-num text-3xl">03</p>
-    <h1 class="mt-2 text-2xl font-bold">机场导航:品牌档案对照表</h1>
+    <h1 class="mt-2 text-2xl font-bold">机场导航:16 家服务商公开信息对照</h1>
     <p class="mt-4 text-[0.95rem] text-ink-2 leading-relaxed">
-      这里收录的是各品牌<strong class="text-ink">官方公开资料</strong>的结构化整理:起步价格、流量、付款周期、官方宣称的卖点与优惠码。
-      「官方宣称」一列的内容<strong class="text-ink">未经本站实测验证</strong>,措辞照录品牌方说法;
-      「每 GB 折算」由官方标价直接除以流量得出,是算术结果,不是性能评价。
+      本页收录各品牌<strong class="text-ink">官网或公开页面能核验的信息</strong>:起步价格、套餐流量、
+      付款周期、官方宣称的线路类型与客户端支持。<strong class="text-ink">不提供速度、稳定性或解锁能力的排名</strong>——
+      本站没有对这 16 家做过同条件的实测,给不出有依据的名次。
       挑选思路请配合<a href="/airport/how-to-choose/">机场怎么选</a>使用;单品牌详情见<a href="/review/">评测档案</a>。
     </p>
     <p class="mt-3 text-xs text-ink-2">
-      档案核验时间:{lastVerified}。本页外链为推广链接(详见<a href="/about/disclaimer/" class="underline underline-offset-2">披露页</a>),经推广链接注册本站可能获得佣金。
+      信息核验日期:{lastVerified}。本页外链为推广链接(详见<a href="/about/disclaimer/" class="underline underline-offset-2">披露页</a>),
+      经推广链接注册本站可能获得佣金,佣金不影响本页的信息呈现方式;内容整理方法见<a href="/about/editorial/" class="underline underline-offset-2">编辑规范</a>。
     </p>
   </div>
 
@@ -41,48 +41,16 @@ const rel = 'nofollow sponsored noopener noreferrer';
   </div>
 
   <section class="mt-12">
-    <h2 class="text-xs tracking-widest text-ink-2 font-semibold">全部档案(按每 GB 折算价升序)</h2>
-    <div class="mt-3 overflow-x-auto">
-      <table class="w-full border-collapse text-sm leading-relaxed min-w-[760px]">
-        <thead>
-          <tr class="text-left">
-            <th class="border-t-[3px] border-double border-rule border-b py-2.5 pr-4 font-semibold whitespace-nowrap">品牌</th>
-            <th class="border-t-[3px] border-double border-rule border-b py-2.5 pr-4 font-semibold whitespace-nowrap">最低套餐(官方标价)</th>
-            <th class="border-t-[3px] border-double border-rule border-b py-2.5 pr-4 font-semibold whitespace-nowrap">每 GB 折算</th>
-            <th class="border-t-[3px] border-double border-rule border-b py-2.5 pr-4 font-semibold whitespace-nowrap">优惠码</th>
-            <th class="border-t-[3px] border-double border-rule border-b py-2.5 pr-4 font-semibold">官方宣称(未验证)</th>
-            <th class="border-t-[3px] border-double border-rule border-b py-2.5 font-semibold whitespace-nowrap">入口</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((b) => (
-            <tr>
-              <td class="border-b border-rule py-2.5 pr-4 font-medium whitespace-nowrap">
-                <a href={`/review/${b.id}/`} class="text-ink hover:text-seal">{b.name}</a>
-                {b.founded && <span class="block text-xs text-ink-2 font-normal">{b.founded} 年开业(官方)</span>}
-              </td>
-              <td class="border-b border-rule py-2.5 pr-4 whitespace-nowrap">{b.priceFrom}</td>
-              <td class="border-b border-rule py-2.5 pr-4 whitespace-nowrap">≈¥{perGb(b)}</td>
-              <td class="border-b border-rule py-2.5 pr-4 whitespace-nowrap">
-                {b.affCode ? <code class="border border-rule bg-paper-2 px-1.5 py-0.5 rounded-sm text-xs">{b.affCode}</code> : '—'}
-              </td>
-              <td class="border-b border-rule py-2.5 pr-4 text-xs text-ink-2">{b.claims.join('、')}</td>
-              <td class="border-b border-rule py-2.5 whitespace-nowrap">
-                <a href={b.affUrl} rel={rel} target="_blank">官网 ↗</a>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-    <p class="mt-3 text-xs text-ink-2">
-      注:付款周期标注「年付」表示官方月均价以年付计;未标注表示官方页面未写明,购买前请与客服确认。
-      价格与优惠码随时可能调整,以官网当前页面为准。点击品牌名可查看对应评测档案。
-    </p>
+    <h2 class="text-xs tracking-widest text-ink-2 font-semibold">全部品牌:可核验信息对照表</h2>
+    <BrandFactsTable />
   </section>
 
+  <div class="max-w-[820px]">
+    <BrandFilters />
+  </div>
+
   <section class="mt-12 max-w-[820px]">
-    <h2 class="text-xs tracking-widest text-ink-2 font-semibold">两张对照图</h2>
+    <h2 class="text-xs tracking-widest text-ink-2 font-semibold">价格与宣称对照图</h2>
     <p class="mt-1 text-xs text-ink-2">
       下面两张图的数据分别来自官方标价的算术折算与官方宣称的逐字记录。
       本站没有实测这 16 家的速度、延迟或解锁能力,因此不提供测速图、解锁评分或质量排名——
@@ -95,7 +63,7 @@ const rel = 'nofollow sponsored noopener noreferrer';
   <section class="mt-12 max-w-[820px]">
     <h2 class="text-xs tracking-widest text-ink-2 font-semibold">按需求进入场景页</h2>
     <ul class="mt-3 grid gap-2 sm:grid-cols-2 text-sm">
-      <li><span class="text-seal mr-1.5">→</span><a href="/airport/ranking/">按可查证指标排序的对照榜</a></li>
+      <li><span class="text-seal mr-1.5">→</span><a href="/airport/ranking/">16 家公开信息对比与选择指南</a></li>
       <li><span class="text-seal mr-1.5">→</span><a href="/airport/cheap/">便宜机场:每 GB 单价怎么算</a></li>
       <li><span class="text-seal mr-1.5">→</span><a href="/airport/stable/">稳定机场:怎么定义与验证</a></li>
       <li><span class="text-seal mr-1.5">→</span><a href="/airport/dedicated-line/">专线机场:值不值与辨真伪</a></li>

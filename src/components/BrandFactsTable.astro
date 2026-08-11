@@ -1,0 +1,83 @@
+---
+/**
+ * 可核验字段对照表 — 只展示官网或公开页面能核对的字段。
+ * 官方宣称与本站验证使用不同标签;无法核验的字段一律显示「暂未核验」,不推测补充。
+ */
+import brandsData from '../data/brands.json';
+
+interface Props {
+  title?: string;
+}
+const { title = '16 家公开信息对照表' } = Astro.props;
+
+const rows = [...brandsData.brands].sort(
+  (a, b) => a.priceNum / a.trafficGb - b.priceNum / b.trafficGb
+);
+const perGb = (b: (typeof rows)[number]) => (b.priceNum / b.trafficGb).toFixed(2);
+const lineClaim = (b: (typeof rows)[number]) => {
+  const hit = b.claims.filter((c) => /IEPL|IPLC|专线|三网|中转/.test(c));
+  return hit.length ? hit.join('、') : '官方未标注';
+};
+const th = 'border-t-[3px] border-double border-rule border-b py-2.5 pr-4 text-left text-xs font-semibold whitespace-nowrap';
+const td = 'border-b border-rule py-2.5 pr-4 align-top';
+const rel = 'nofollow sponsored noopener noreferrer';
+---
+
+<figure class="my-8">
+  <figcaption class="border border-rule bg-paper-2 px-4 py-2.5">
+    <span class="text-xs font-semibold tracking-widest text-ink">{title}</span>
+    <span class="mt-1 block text-xs text-ink-2 leading-relaxed">
+      字段来源:品牌方提供资料与官网页面。标「官方宣称」的内容<strong class="font-semibold text-ink">照录商家说法,未经本站验证</strong>;
+      标「暂未核验」的表示官方资料未写明、本站也未确认,<strong class="font-semibold text-ink">不作推测补充</strong>。
+      「每 GB 折算」是标价 ÷ 流量的算术结果,不是性能指标。核验日期 {brandsData.lastVerified}。
+    </span>
+  </figcaption>
+  <div class="overflow-x-auto border-x border-b border-rule">
+    <table class="w-full border-collapse text-sm min-w-[980px]">
+      <thead>
+        <tr>
+          <th class={`${th} sticky left-0 z-10 bg-paper pl-4`}>品牌</th>
+          <th class={th}>最低套餐(官方标价)</th>
+          <th class={th}>每 GB 折算</th>
+          <th class={th}>付款周期</th>
+          <th class={th}>设备数量</th>
+          <th class={th}>线路类型(官方宣称)</th>
+          <th class={th}>客户端支持</th>
+          <th class={th}>退款规则</th>
+          <th class={th}>官网状态页</th>
+          <th class={th}>信息来源</th>
+          <th class={th}>核验日期</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((b) => (
+          <tr>
+            <td class={`${td} sticky left-0 z-10 bg-paper pl-4 whitespace-nowrap font-medium`}>
+              <a href={`/review/${b.id}/`} class="text-ink hover:text-seal">{b.name}</a>
+            </td>
+            <td class={`${td} whitespace-nowrap`}>{b.priceFrom}</td>
+            <td class={`${td} whitespace-nowrap tabular-nums`}>≈¥{perGb(b)}</td>
+            <td class={`${td} whitespace-nowrap`}>
+              {b.billing === '未标注' ? <span class="text-ink-2">官方未标注</span> : b.billing}
+            </td>
+            <td class={`${td} whitespace-nowrap text-ink-2`}>{b.devices}</td>
+            <td class={`${td} text-xs`}>{lineClaim(b)}</td>
+            <td class={`${td} text-xs`}>{b.clientSupport}</td>
+            <td class={`${td} whitespace-nowrap text-ink-2`}>{b.refundPolicy}</td>
+            <td class={`${td} whitespace-nowrap text-ink-2`}>{b.statusPage}</td>
+            <td class={`${td} whitespace-nowrap`}>
+              <a href={b.affUrl} rel={rel} target="_blank">品牌官网 ↗</a>
+              <span class="block text-[0.68rem] text-ink-2">推广链接;{b.sourceNote}</span>
+            </td>
+            <td class={`${td} whitespace-nowrap tabular-nums text-ink-2`}>{brandsData.lastVerified}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+  <p class="border-x border-b border-rule px-4 py-2 text-xs text-ink-2 leading-relaxed">
+    设备数量、退款规则与官网状态页三项,16 家的公开资料均未写明,因此统一标为「暂未核验」——
+    这三项都属于本站建议的<strong class="font-semibold text-ink">购前必问项</strong>,请直接向客服确认后再付款。
+    价格与优惠随时可能调整,以官网当前页面为准。
+  </p>
+</figure>

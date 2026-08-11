@@ -1,0 +1,75 @@
+---
+/**
+ * 按公开条件筛选 — 不做速度/稳定性名次,只按可核验的客观条件排序或标记。
+ * 每个维度旁都注明依据是「官方标价/资料」还是「暂未核验」。
+ */
+import brandsData from '../data/brands.json';
+
+const { brands } = brandsData;
+
+const byEntryPrice = [...brands].sort((a, b) => a.priceNum - b.priceNum).slice(0, 5);
+const byTraffic = [...brands].sort((a, b) => b.trafficGb - a.trafficGb).slice(0, 5);
+const unlimited = brands.filter((b) => b.claims.some((c) => /不限时/.test(c)));
+const monthly = brands.filter((b) => b.billing === '月付');
+const withLineClaim = brands.filter((b) => b.claims.some((c) => /IEPL|IPLC|专线/.test(c)));
+
+const groups = [
+  {
+    title: '入门价格最低(官方标价)',
+    basis: '按官方最低套餐标价升序,与流量、周期无关',
+    items: byEntryPrice.map((b) => ({ id: b.id, name: b.name, tag: b.priceFrom })),
+  },
+  {
+    title: '单套餐流量最大(官方标注)',
+    basis: '按官方标注流量降序',
+    items: byTraffic.map((b) => ({ id: b.id, name: b.name, tag: `${b.trafficGb}GB` })),
+  },
+  {
+    title: '官方标注支持不限时套餐',
+    basis: '仅收录官方资料中出现「不限时」字样的品牌',
+    items: unlimited.map((b) => ({ id: b.id, name: b.name, tag: '官方宣称' })),
+  },
+  {
+    title: '官方明确标注月付',
+    basis: '仅收录官方标价明确写月付的品牌(其余品牌付款周期官方未标注)',
+    items: monthly.map((b) => ({ id: b.id, name: b.name, tag: '官方标注' })),
+  },
+  {
+    title: '官方宣称专线线路(IEPL/IPLC)',
+    basis: '仅统计官方资料出现专线相关字样,是否属实本站未验证',
+    items: withLineClaim.map((b) => ({ id: b.id, name: b.name, tag: '官方宣称' })),
+  },
+];
+---
+
+<section class="my-8">
+  <h2 class="text-xs tracking-widest text-ink-2 font-semibold">按公开条件筛选</h2>
+  <p class="mt-1 text-xs text-ink-2 leading-relaxed">
+    以下分组均按<strong class="font-semibold text-ink">可核验的公开条件</strong>筛选或排序,
+    <strong class="font-semibold text-ink">不涉及速度、稳定性或解锁能力的名次</strong>——本站没有实测数据支撑这类排名。
+    设备数量与退款规则因 16 家均未公开标注,暂不作为筛选维度。
+  </p>
+
+  <div class="mt-4 grid gap-6 sm:grid-cols-2">
+    {groups.map((g) => (
+      <div class="border border-rule">
+        <div class="border-b border-rule bg-paper-2 px-4 py-2">
+          <p class="text-sm font-semibold text-ink">{g.title}</p>
+          <p class="mt-0.5 text-xs text-ink-2">{g.basis}</p>
+        </div>
+        <ul class="divide-y divide-rule">
+          {g.items.length > 0 ? (
+            g.items.map((it) => (
+              <li class="flex items-center justify-between px-4 py-2 text-sm">
+                <a href={`/review/${it.id}/`} class="text-ink hover:text-seal">{it.name}</a>
+                <span class="text-xs text-ink-2">{it.tag}</span>
+              </li>
+            ))
+          ) : (
+            <li class="px-4 py-3 text-xs text-ink-2">暂无品牌满足该条件(按公开资料)。</li>
+          )}
+        </ul>
+      </div>
+    ))}
+  </div>
+</section>
