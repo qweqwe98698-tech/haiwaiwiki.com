@@ -1,0 +1,50 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import { breadcrumbJsonLd, pageJsonLd } from '../../lib/seo';
+import { STATIC_PAGES } from '../../data/site';
+
+const meta = STATIC_PAGES['/about/disclaimer/'];
+const jsonLd = [
+  breadcrumbJsonLd([
+    { name: '首页', url: '/' },
+    { name: '关于本站', url: '/about/' },
+    { name: '免责声明', url: '/about/disclaimer/' },
+  ]),
+  pageJsonLd('WebPage', { name: meta.title, description: meta.description, url: '/about/disclaimer/' }),
+];
+---
+
+<BaseLayout title={meta.title} description={meta.description} path="/about/disclaimer/" jsonLd={jsonLd}>
+  <Breadcrumb crumbs={[{ name: '关于本站', url: '/about/' }, { name: '免责声明', url: '/about/disclaimer/' }]} />
+  <article class="entry-body mx-auto mt-10">
+    <h1 class="text-2xl font-bold">免责声明与推广披露</h1>
+
+    <h2>内容性质</h2>
+    <p>
+      本站内容为技术知识整理与信息参考,不构成任何法律、购买或投资建议。
+      使用代理服务请遵守你所在地区的法律法规;因使用本站信息产生的任何后果,由使用者自行承担。
+    </p>
+
+    <h2>推广链接(Affiliate)披露</h2>
+    <p>本站与部分机场品牌存在推广合作,具体方式如下,读者有权在点击前知情:</p>
+    <ul>
+      <li>指向品牌官网的链接可能是推广链接:经由这些链接注册或购买,本站可能获得佣金,你支付的价格不因此改变;</li>
+      <li>全部推广链接均声明 <code>rel="sponsored nofollow"</code>;</li>
+      <li>「合作展示位」等商务合作版位会在页面上明确标注,展示顺序不代表测速或质量排名;</li>
+      <li>佣金不影响评测结论:评测中的「官方宣称」与「实测结果」严格分开,合作品牌不会因此获得更高评价——这一点由<a href="/about/editorial/">编辑规范</a>的数据来源分级保证。</li>
+    </ul>
+
+    <h2>数据免责</h2>
+    <p>
+      价格、套餐、优惠码、解锁能力等信息随时可能被服务方调整,本站标注的核验时间仅表示当时状态,
+      不构成对当前状态的保证。付费前请以对应服务的官方页面为准。
+    </p>
+
+    <h2>商标与内容</h2>
+    <p>
+      本站提及的产品与品牌名称属于其各自所有者。本站原创内容未经许可请勿全文转载;
+      引用请注明出处 haiwaiwiki.com。
+    </p>
+  </article>
+</BaseLayout>

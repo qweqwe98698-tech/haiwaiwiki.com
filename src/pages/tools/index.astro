@@ -1,0 +1,16 @@
+---
+import HubLayout from '../../layouts/HubLayout.astro';
+---
+
+<HubLayout url="/tools/" listTitle="问题条目">
+  <p>
+    代理连上了,应用却还是不能用——这是本栏目处理的典型场景。
+    ChatGPT 提示地区不可用、Netflix 只有自制剧、Telegram 收不到验证码……
+    这类问题的原因往往不在应用本身,而在节点的 IP 属性、解锁配置或客户端分流规则上。
+    每篇条目按「先判断原因,再对症处理」的顺序组织,从最常见的原因开始排除。
+  </p>
+  <p slot="aside">
+    排查前建议先弄懂<a href="/protocol/native-ip/">原生 IP</a> 这个概念——
+    大约一半的「应用不能用」最终都指向它。
+  </p>
+</HubLayout>

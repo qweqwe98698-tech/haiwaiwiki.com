@@ -1,0 +1,28 @@
+---
+/** 索引行:HaiwaiWiki 的列表基本单元(SITE-DNA §7),代替卡片网格。 */
+interface Props {
+  num?: string; // 两位编号,可选
+  title: string;
+  url: string;
+  brief?: string;
+  meta?: string[]; // 元信息:日期/类型/核验状态等
+}
+const { num, title, url, brief, meta = [] } = Astro.props;
+---
+
+<article class="border-b border-rule py-4 first:border-t first:border-rule">
+  <div class="flex items-baseline gap-3">
+    {num && <span class="index-num text-xs shrink-0">{num}</span>}
+    <div class="min-w-0">
+      <h3 class="text-[1.05rem] font-semibold leading-snug">
+        <a href={url} class="text-ink hover:text-seal">{title}</a>
+      </h3>
+      {brief && <p class="mt-1 text-sm text-ink-2 leading-relaxed">{brief}</p>}
+      {meta.length > 0 && (
+        <p class="mt-1.5 text-xs text-ink-2 flex flex-wrap gap-x-3">
+          {meta.map((m) => <span>{m}</span>)}
+        </p>
+      )}
+    </div>
+  </div>
+</article>

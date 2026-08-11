@@ -1,0 +1,51 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import { STATIC_PAGES } from '../../data/site';
+
+const meta = STATIC_PAGES['/search/'];
+---
+
+<BaseLayout title={meta.title} description={meta.description} path="/search/" noindex>
+  <Breadcrumb crumbs={[{ name: '站内检索', url: '/search/' }]} />
+  <div class="mt-10 max-w-[720px]">
+    <h1 class="text-2xl font-bold">站内检索</h1>
+    <p class="mt-2 text-sm text-ink-2">检索全站词条:机场选择、客户端教程、协议知识与问题排查。</p>
+    <div id="search" class="mt-6"></div>
+    <noscript>
+      <p class="mt-6 border border-rule bg-paper-2 px-4 py-3 text-sm text-ink-2">
+        检索功能需要启用 JavaScript。也可以从<a href="/">首页栏目索引</a>浏览全部内容。
+      </p>
+    </noscript>
+  </div>
+
+  <link rel="stylesheet" href="/pagefind/pagefind-ui.css" />
+  <script src="/pagefind/pagefind-ui.js" is:inline></script>
+  <script is:inline>
+    window.addEventListener('DOMContentLoaded', () => {
+      if (typeof PagefindUI === 'undefined') return;
+      const ui = new PagefindUI({
+        element: '#search',
+        showSubResults: true,
+        showImages: false,
+        translations: {
+          placeholder: '输入关键词,如 IPLC、Clash、跑路……',
+          zero_results: '没有找到与「[SEARCH_TERM]」相关的词条',
+        },
+      });
+      const q = new URLSearchParams(location.search).get('q');
+      if (q) ui.triggerSearch(q);
+    });
+  </script>
+  <style is:global>
+    #search {
+      --pagefind-ui-primary: var(--seal);
+      --pagefind-ui-text: var(--ink);
+      --pagefind-ui-background: var(--paper);
+      --pagefind-ui-border: var(--rule);
+      --pagefind-ui-border-width: 1px;
+      --pagefind-ui-border-radius: 2px;
+      --pagefind-ui-font: inherit;
+    }
+  </style>
+</BaseLayout>

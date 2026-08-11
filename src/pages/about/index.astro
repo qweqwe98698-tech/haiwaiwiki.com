@@ -1,0 +1,49 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import { breadcrumbJsonLd, pageJsonLd } from '../../lib/seo';
+import { STATIC_PAGES, SITE } from '../../data/site';
+
+const meta = STATIC_PAGES['/about/'];
+const jsonLd = [
+  breadcrumbJsonLd([{ name: '首页', url: '/' }, { name: '关于本站', url: '/about/' }]),
+  pageJsonLd('AboutPage', { name: meta.title, description: meta.description, url: '/about/' }),
+  pageJsonLd('ContactPage', {
+    name: '联系 HaiwaiWiki 编辑部',
+    description: '内容勘误、信息过期提醒与风险线索的联系方式。',
+    url: '/about/',
+  }),
+];
+---
+
+<BaseLayout title={meta.title} description={meta.description} path="/about/" jsonLd={jsonLd}>
+  <Breadcrumb crumbs={[{ name: '关于本站', url: '/about/' }]} />
+  <article class="entry-body mx-auto mt-10">
+    <h1 class="text-2xl font-bold">关于 HaiwaiWiki</h1>
+    <p>
+      HaiwaiWiki(海外Wiki)是一个中文知识站点,主题是机场(订阅制代理服务)与海外网络工具:
+      怎么选、怎么用、出了问题怎么排查、哪些风险需要提前知道。
+    </p>
+    <p>
+      我们把内容组织成「词条」:每个词条只解决一个问题,标注发布与修订时间,并持续更新。
+      写作由海外Wiki编辑部完成——这是一个编辑署名,代表统一的编辑标准,而不是某个具体个人的观点。
+    </p>
+    <h2>我们不做什么</h2>
+    <ul>
+      <li>不做「第一名机场」式榜单——排名脱离你的需求就没有意义;</li>
+      <li>不写没有实测依据的测速数字、评分或解锁百分比;</li>
+      <li>不分发免费节点或订阅链接;</li>
+      <li>不把商家宣称直接当作事实转述——官方说法一律标注「官方宣称」。</li>
+    </ul>
+    <h2>内容如何生产</h2>
+    <p>
+      详见<a href="/about/editorial/">编辑规范</a>:数据来源分级、核验时间标注与更新机制都写在那里。
+      与商业合作有关的规则(推广链接如何存在、佣金如何不影响结论)见<a href="/about/disclaimer/">免责声明与披露</a>。
+    </p>
+    <h2>联系编辑部</h2>
+    <p>
+      内容勘误、信息过期提醒、风险线索,请发邮件至
+      <a href={`mailto:${SITE.email}`}>{SITE.email}</a>。风险线索请附可查证的信息(截图、链接、时间)。
+    </p>
+  </article>
+</BaseLayout>

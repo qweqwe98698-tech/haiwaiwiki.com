@@ -1,0 +1,21 @@
+---
+/** 相关词条:文字链列表(不是卡片网格)。传入已解析的 {title, url}。 */
+interface Props {
+  entries: { title: string; url: string }[];
+}
+const { entries } = Astro.props;
+---
+
+{entries.length > 0 && (
+  <nav aria-label="相关词条" class="mt-12">
+    <h2 class="text-xs tracking-widest text-ink-2 font-semibold">继续阅读</h2>
+    <ul class="mt-2 space-y-2">
+      {entries.map((e) => (
+        <li class="text-[0.95rem]">
+          <span class="text-seal mr-2" aria-hidden="true">→</span>
+          <a href={e.url}>{e.title}</a>
+        </li>
+      ))}
+    </ul>
+  </nav>
+)}

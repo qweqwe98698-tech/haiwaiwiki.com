@@ -1,0 +1,73 @@
+---
+/**
+ * 官方宣称矩阵 — 逐字来自品牌方公开资料的「有没有这样宣称」,
+ * 不是本站的能力测试结果。空格 = 官方资料未提及,不等于不支持。
+ */
+import brandsData from '../data/brands.json';
+
+interface Props {
+  /** 只看某几个维度 */
+  dims?: string[];
+  title?: string;
+}
+
+const ALL_DIMS: { key: string; label: string; match: (claims: string[]) => boolean }[] = [
+  { key: 'iepl', label: '专线', match: (c) => c.some((x) => /IEPL|IPLC|专线/.test(x)) },
+  { key: 'vless', label: 'VLESS', match: (c) => c.some((x) => /VLESS/.test(x)) },
+  { key: 'stream', label: '流媒体解锁', match: (c) => c.some((x) => /流媒体|解锁丰富/.test(x)) },
+  { key: 'ai', label: 'AI 解锁', match: (c) => c.some((x) => /AI/.test(x)) },
+  { key: 'client', label: '自研客户端', match: (c) => c.some((x) => /自研客户端/.test(x)) },
+  { key: 'sub', label: '订阅导入', match: (c) => c.some((x) => /订阅导入/.test(x)) },
+];
+
+const { dims, title = '16 个品牌的官方宣称矩阵' } = Astro.props;
+const cols = dims ? ALL_DIMS.filter((d) => dims.includes(d.key)) : ALL_DIMS;
+const rows = brandsData.brands.map((b) => ({
+  name: b.name,
+  id: b.id,
+  cells: cols.map((d) => d.match(b.claims)),
+}));
+const counts = cols.map((_, i) => rows.filter((r) => r.cells[i]).length);
+---
+
+<figure class="my-8 border border-rule">
+  <figcaption class="border-b border-rule bg-paper-2 px-4 py-2.5">
+    <span class="text-xs font-semibold tracking-widest text-ink">{title}</span>
+    <span class="mt-0.5 block text-xs text-ink-2">
+      ● = 品牌官方资料中<strong class="font-semibold">出现过该宣称</strong>;空白 = 官方资料未提及(不等于不支持)。
+      <strong class="font-semibold">全部未经本站实测验证</strong>。核验时间 {brandsData.lastVerified}。
+    </span>
+  </figcaption>
+  <div class="overflow-x-auto">
+    <table class="w-full border-collapse text-sm">
+      <thead>
+        <tr>
+          <th class="sticky left-0 z-10 border-b border-rule bg-paper px-4 py-2 text-left text-xs font-semibold whitespace-nowrap">品牌</th>
+          {cols.map((d) => (
+            <th class="border-b border-rule px-3 py-2 text-center text-xs font-semibold whitespace-nowrap">{d.label}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r) => (
+          <tr>
+            <td class="sticky left-0 z-10 border-b border-rule bg-paper px-4 py-2 whitespace-nowrap">
+              <a href={`/review/${r.id}/`} class="text-ink hover:text-seal">{r.name}</a>
+            </td>
+            {r.cells.map((on) => (
+              <td class="border-b border-rule px-3 py-2 text-center">
+                {on ? <span class="text-seal font-bold" aria-label="官方有此宣称">●</span> : <span class="text-rule" aria-label="官方未提及">—</span>}
+              </td>
+            ))}
+          </tr>
+        ))}
+        <tr>
+          <td class="sticky left-0 z-10 bg-paper px-4 py-2 text-xs text-ink-2 whitespace-nowrap">宣称家数</td>
+          {counts.map((c) => (
+            <td class="px-3 py-2 text-center text-xs tabular-nums text-ink-2">{c}/16</td>
+          ))}
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</figure>

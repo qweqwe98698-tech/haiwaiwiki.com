@@ -1,0 +1,84 @@
+---
+import type { CollectionKey } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import { breadcrumbJsonLd } from '../../lib/seo';
+import { SECTIONS, STATIC_PAGES, entryUrl } from '../../data/site';
+import { publishedEntries } from '../../lib/entries';
+
+const meta = STATIC_PAGES['/sitemap/'];
+
+const groups = await Promise.all(
+  SECTIONS.map(async (s) => {
+    const entries = s.collection
+      ? (await publishedEntries(s.collection as CollectionKey)).reverse()
+      : [];
+    return {
+      section: s,
+      items: entries.map((e) => ({
+        title: e.data.title,
+        url: entryUrl(e.collection, e.id),
+        date: e.data.updatedDate ?? e.data.pubDate,
+      })),
+    };
+  })
+);
+
+const totalEntries = groups.reduce((n, g) => n + g.items.length, 0);
+const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+const aboutPages = [
+  { title: '关于本站', url: '/about/' },
+  { title: '编辑规范', url: '/about/editorial/' },
+  { title: '免责声明与推广披露', url: '/about/disclaimer/' },
+  { title: '隐私政策', url: '/about/privacy/' },
+];
+
+const jsonLd = [breadcrumbJsonLd([{ name: '首页', url: '/' }, { name: '网站地图', url: '/sitemap/' }])];
+---
+
+<BaseLayout title={meta.title} description={meta.description} path="/sitemap/" jsonLd={jsonLd}>
+  <Breadcrumb crumbs={[{ name: '网站地图', url: '/sitemap/' }]} />
+
+  <div class="mt-10 max-w-[760px]">
+    <h1 class="text-2xl font-bold">网站地图</h1>
+    <p class="mt-3 text-sm text-ink-2 leading-relaxed">
+      全站可索引页面的完整清单,共 {totalEntries} 篇条目 + {SECTIONS.length} 个栏目页 + {aboutPages.length} 个站务页面。
+      给搜索引擎与读者共用;机器可读版本见 <a href="/sitemap-index.xml">sitemap-index.xml</a>,
+      更新订阅见 <a href="/rss.xml">RSS</a>。
+    </p>
+  </div>
+
+  <div class="mt-10 grid gap-10 lg:grid-cols-2">
+    {groups.map((g) => (
+      <section>
+        <h2 class="text-sm font-semibold text-ink flex items-baseline gap-2 border-b border-rule pb-2">
+          <span class="index-num text-xs">{g.section.num}</span>
+          <a href={g.section.url} class="text-ink hover:text-seal">{g.section.name}</a>
+          <span class="ml-auto text-xs font-normal text-ink-2">{g.items.length} 条</span>
+        </h2>
+        {g.items.length > 0 ? (
+          <ul class="mt-2 space-y-1.5">
+            {g.items.map((it) => (
+              <li class="flex items-baseline gap-3 text-sm">
+                <a href={it.url} class="text-ink hover:text-seal">{it.title}</a>
+                <span class="ml-auto shrink-0 text-xs text-ink-2 tabular-nums">{fmt(it.date)}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p class="mt-2 text-sm text-ink-2">本栏目为档案页,内容在栏目页内直接展示。</p>
+        )}
+      </section>
+    ))}
+
+    <section>
+      <h2 class="text-sm font-semibold text-ink border-b border-rule pb-2">站务与说明</h2>
+      <ul class="mt-2 space-y-1.5 text-sm">
+        {aboutPages.map((p) => (
+          <li><a href={p.url} class="text-ink hover:text-seal">{p.title}</a></li>
+        ))}
+        <li><a href="/search/" class="text-ink hover:text-seal">站内检索</a></li>
+      </ul>
+    </section>
+  </div>
+</BaseLayout>

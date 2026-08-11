@@ -1,0 +1,21 @@
+---
+import { SECTIONS } from '../data/site';
+
+interface Props {
+  compact?: boolean;
+}
+const { compact = false } = Astro.props;
+---
+
+<div class:list={['grid border-l border-t border-rule', compact ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4']}>
+  {SECTIONS.map((s) => (
+    <a
+      href={s.url}
+      class="group block border-r border-b border-rule p-4 hover:bg-paper-2 hover:no-underline transition-colors"
+    >
+      <span class="index-num text-xs">{s.num}</span>
+      <span class="mt-1 block font-semibold text-ink group-hover:text-seal">{s.name}</span>
+      {!compact && <span class="mt-1 block text-xs text-ink-2 leading-relaxed">{s.brief}</span>}
+    </a>
+  ))}
+</div>

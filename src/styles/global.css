@@ -1,0 +1,283 @@
+@import 'tailwindcss';
+
+/* ============ HaiwaiWiki 设计令牌(SITE-DNA §6) ============ */
+:root {
+  --paper: #faf9f5;
+  --paper-2: #f2f0e9;
+  --ink: #1d221f;
+  --ink-2: #5a6058;
+  --rule: #dedbd0;
+  --seal: #1e6b52;
+  --seal-2: #e7f0ec;
+  --cinnabar: #b03a2e;
+  --cinnabar-2: #f7ebe9;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #151816;
+    --paper-2: #1c201d;
+    --ink: #e8e6df;
+    --ink-2: #a3a89f;
+    --rule: #2b302c;
+    --seal: #4fa583;
+    --seal-2: #21312a;
+    --cinnabar: #d16a5f;
+    --cinnabar-2: #33221f;
+  }
+}
+
+@theme {
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-rule: var(--rule);
+  --color-seal: var(--seal);
+  --color-seal-2: var(--seal-2);
+  --color-cinnabar: var(--cinnabar);
+  --color-cinnabar-2: var(--cinnabar-2);
+  --font-sans: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif;
+  --radius-sm: 2px;
+}
+
+html {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+body {
+  font-size: 15px;
+  line-height: 1.8;
+}
+::selection {
+  background: var(--seal-2);
+}
+
+/* ============ 印刷排版元素 ============ */
+/* 双细线:刊头/页脚/关键分区(SITE-DNA borderStyle) */
+.rule-double {
+  border-top: 3px double var(--rule);
+}
+.rule-hair {
+  border-top: 1px solid var(--rule);
+}
+/* 索引编号:等宽衬线数字 */
+.index-num {
+  font-variant-numeric: tabular-nums;
+  color: var(--seal);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+/* 栏目标签(「」式) */
+.corner-label::before {
+  content: '「';
+  color: var(--ink-2);
+}
+.corner-label::after {
+  content: '」';
+  color: var(--ink-2);
+}
+
+a {
+  color: var(--seal);
+  text-decoration: none;
+  transition: color 120ms;
+}
+a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ============ 可访问性 ============ */
+/* 键盘焦点必须可见(鼠标点击不显示,避免干扰阅读) */
+:focus-visible {
+  outline: 2px solid var(--seal);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+/* details 的 summary 默认 outline 在部分浏览器不显示,单独兜底 */
+summary:focus-visible {
+  outline: 2px solid var(--seal);
+  outline-offset: 2px;
+}
+/* 跳到主内容:仅键盘可见 */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 50;
+}
+.skip-link:focus {
+  left: 0;
+  background: var(--paper);
+  border: 1px solid var(--seal);
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+/* 移动端点击区:列表型链接补足到 ≥24px(WCAG 2.5.8)。
+   正文内联链接属于豁免范围,加 padding 反而会破坏行内排版,故排除。 */
+@media (max-width: 767px) {
+  footer li > a,
+  main ul li > a,
+  main ol li > a,
+  main article h3 > a {
+    display: inline-block;
+    padding-block: 4px;
+    min-height: 24px;
+  }
+  .entry-body li > a {
+    display: inline;
+    padding-block: 0;
+    min-height: 0;
+  }
+}
+
+/* 尊重系统的减少动态效果偏好 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============ 文章正文(自写 prose,不用 typography 插件) ============ */
+.entry-body {
+  max-width: 72ch;
+}
+.entry-body > * + * {
+  margin-top: 1em;
+}
+.entry-body h2 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-top: 2.4em;
+  padding-top: 1.2em;
+  border-top: 1px solid var(--rule);
+}
+.entry-body h3 {
+  font-size: 1.12rem;
+  font-weight: 600;
+  margin-top: 1.8em;
+}
+.entry-body h2 .heading-anchor,
+.entry-body h3 .heading-anchor {
+  margin-left: 0.4em;
+  color: var(--rule);
+  font-weight: 400;
+}
+.entry-body h2:hover .heading-anchor,
+.entry-body h3:hover .heading-anchor {
+  color: var(--seal);
+}
+.entry-body ul,
+.entry-body ol {
+  padding-left: 1.6em;
+}
+.entry-body ul {
+  list-style: none;
+}
+.entry-body ul > li {
+  position: relative;
+}
+.entry-body ul > li::before {
+  content: '·';
+  position: absolute;
+  left: -1.1em;
+  color: var(--seal);
+  font-weight: 700;
+}
+.entry-body ol {
+  list-style: decimal;
+}
+.entry-body ol > li::marker {
+  color: var(--seal);
+  font-weight: 700;
+}
+.entry-body li + li {
+  margin-top: 0.4em;
+}
+.entry-body blockquote {
+  border-left: 3px solid var(--rule);
+  padding-left: 1em;
+  color: var(--ink-2);
+}
+.entry-body strong {
+  font-weight: 600;
+}
+.entry-body a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--rule);
+}
+.entry-body a:hover {
+  text-decoration-color: var(--seal);
+}
+.entry-body code {
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 0.1em 0.35em;
+  font-size: 0.88em;
+}
+.entry-body pre {
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 1em;
+  overflow-x: auto;
+  font-size: 0.88em;
+  line-height: 1.6;
+}
+.entry-body pre code {
+  background: none;
+  border: none;
+  padding: 0;
+}
+/* 表格:横向滚动容器由布局包裹,这里只管样式 */
+.entry-body table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92em;
+  line-height: 1.5;
+}
+.entry-body th {
+  text-align: left;
+  font-weight: 600;
+  border-top: 3px double var(--rule);
+  border-bottom: 1px solid var(--rule);
+  padding: 0.6em 0.8em;
+  white-space: nowrap;
+}
+.entry-body td {
+  border-bottom: 1px solid var(--rule);
+  padding: 0.6em 0.8em;
+  vertical-align: top;
+}
+.entry-body img {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--rule);
+}
+.entry-body hr {
+  border: 0;
+  border-top: 3px double var(--rule);
+  margin: 2.5em auto;
+  width: 40%;
+}
+
+/* 表格横向滚动(移动端) */
+.entry-body table {
+  display: block;
+  overflow-x: auto;
+}
+@media (min-width: 740px) {
+  .entry-body table {
+    display: table;
+  }
+}

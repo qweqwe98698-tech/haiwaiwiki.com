@@ -1,0 +1,90 @@
+---
+title: Shadowrocket 机场推荐:iPhone 用户的三个额外约束
+description: iOS 选机场比桌面端多三层约束:客户端本身要非国区账号购买、订阅格式要兼容、多设备限制更容易触发。本文给出 iPhone 用户专属的确认清单与常见坑。
+pubDate: 2026-08-12
+primaryKeyword: Shadowrocket 机场推荐
+secondaryKeywords:
+  - 小火箭机场推荐
+  - iPhone 机场推荐
+  - iOS 机场推荐
+  - 苹果机场推荐
+searchIntent: Commercial
+contentType: 推荐
+quickAnswer: iPhone 用机场有三个额外约束:一是 Shadowrocket 需用非国区 Apple ID 付费购买,不能用国区账号下载;二是要确认机场能提供 Shadowrocket 可导入的订阅格式(通用或 Clash 格式均可,需购前问客服);三是 iOS 后台策略下多设备共用更容易触发在线数限制。三项都确认后,再按线路和价格挑。
+relatedSlugs:
+  - tutorial/shadowrocket-guide
+  - airport/clash
+  - airport/how-to-choose
+pillar: airport
+reviewStatus: 编辑整理
+lastVerified: 2026-08
+faq:
+  - q: 买机场之前要先买 Shadowrocket 吗?
+    a: 建议顺序反过来更省事:先确认目标机场能提供可导入的订阅格式,再买客户端。Shadowrocket 是一次性付费应用,但需要非国区 Apple ID;如果机场只给自研客户端,这笔钱可能白花。
+  - q: 没有非国区 Apple ID 怎么办?
+    a: 可以自行注册一个其他地区的免费 Apple ID(流程与地区政策以 Apple 官方页面为准)。不要购买来路不明的共享账号——存在设备被开启丢失模式勒索的真实案例,风险远大于省下的钱。
+  - q: iPhone 上除了 Shadowrocket 还有别的选择吗?
+    a: iOS 上有多款代理客户端,但多数同样在国区商店不可用,约束相同。本站不逐一推荐具体应用,因为商店上架状态和价格变动频繁,任何静态清单都容易过期。
+  - q: 为什么手机 Wi-Fi 能用,切换到流量就不行?
+    a: 常见于运营商网络对特定协议或端口的处理差异,也可能是切换网络后客户端未重连。先在流量下手动重连并换节点测试,仍不行时向机场确认是否有针对移动网络更友好的节点。
+  - q: iPhone 和电脑能同时用一个机场账号吗?
+    a: 取决于套餐的同时在线设备数限制,多数机场有上限但公开资料很少写明。这是购前必问项,尤其当你要手机、电脑、平板同时在线时。
+  - q: 小火箭里的订阅怎么更新?
+    a: 首页长按订阅条目选更新,或在设置里开启启动时自动更新。机场调整节点后手动更新一次最稳妥,详细步骤见本站的 Shadowrocket 教程。
+---
+
+import ClaimsMatrix from '../../components/ClaimsMatrix.astro';
+
+iPhone 用户选机场,比桌面端多三层约束。这三层都和线路质量无关,
+但任何一层没过,买了也用不上。
+
+## 约束一:客户端本身的获取门槛
+
+Shadowrocket 在中国大陆区 App Store 不上架,需要用**非国区 Apple ID 付费购买**。
+这带来一个购买顺序问题:
+
+> **先确认机场的订阅格式,再买客户端。**
+> 如果机场只提供自研客户端、不给标准订阅链接,那么这笔应用费用就白花了。
+
+注册免费的其他地区 Apple ID 是可行路径;
+不要用来历不明的共享账号——[教程页](/tutorial/shadowrocket-guide/)里说明了其中的实际风险。
+
+## 约束二:订阅格式必须能导入
+
+Shadowrocket 支持通用订阅格式,也能处理 Clash 格式配置。问题不在它支不支持,
+而在**机场愿不愿意给你链接**。
+
+<ClaimsMatrix dims={['sub', 'client', 'stream']} title="订阅方式与解锁宣称(未验证)" />
+
+收录的 16 家官方资料普遍写「支持订阅导入(需联系在线客服)」——
+链接需要人工索取,格式要问了才知道。这一点与 [Clash 机场推荐](/airport/clash/)面临的情况相同,
+但对 iOS 用户后果更重:桌面端不行还能装别的客户端,iOS 的替代选择更少。
+
+## 约束三:多设备与在线数限制
+
+iOS 的后台网络策略下,手机常常整天保持连接。如果你同时还在用电脑、平板,
+很容易触碰套餐的同时在线设备数上限——而这一项**几乎没有品牌在公开资料里写明**。
+
+表现通常不是明确报错,而是某台设备莫名连不上、或频繁掉线。
+购前问清楚,比事后排查便宜得多。
+
+## iPhone 用户的购前清单
+
+> 你好,我在 iPhone 上使用 Shadowrocket。请问:
+> 1. 能否提供 Shadowrocket 可导入的订阅链接(通用或 Clash 格式)?
+> 2. 同时在线设备数上限是多少?
+> 3. 是否有针对移动网络(4G/5G)更稳定的节点?
+> 4. 最短可购买周期是多久?
+
+## 三层约束之后
+
+过了这三关,剩下的判断维度与所有人一样:
+
+- 主要看视频 → [流媒体解锁机场](/airport/streaming/);
+- 主要用 AI → [ChatGPT 机场推荐](/airport/chatgpt/);
+- 在意晚高峰 → [专线机场推荐](/airport/dedicated-line/)与[稳定机场推荐](/airport/stable/);
+- 预算优先 → [便宜机场推荐](/airport/cheap/)。
+
+拿到订阅后的完整操作流程(添加订阅、三种分流模式、连不上时的排查)见
+[Shadowrocket 新手教程](/tutorial/shadowrocket-guide/);
+全部品牌的官方数据横向对照见[机场导航](/directory/)。

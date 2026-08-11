@@ -1,0 +1,347 @@
+{
+  "_note": "全部字段来自品牌方提供/官方页面公开资料,未经本站实测验证。pricePerGb 为 官方最低套餐价÷流量 的算术折算,仅供对照。featured/featuredRank 为商务合作展示位与展示顺序,不代表测速、质量或评测排名。",
+  "lastVerified": "2026-08",
+  "brands": [
+    {
+      "id": "gsy",
+      "name": "光速云",
+      "affUrl": "https://sahude.gsyvipaff.com/#/?code=keqgvT5Y",
+      "affCode": "AMM",
+      "affCodeNote": "",
+      "priceFrom": "¥17/月 · 110GB",
+      "priceNum": 17,
+      "trafficGb": 110,
+      "billing": "未标注",
+      "founded": "",
+      "claims": [
+        "六年老牌",
+        "IEPL 专线",
+        "VLESS 协议",
+        "流媒体全解锁",
+        "AI 全解锁",
+        "自研客户端",
+        "订阅导入需联系客服"
+      ],
+      "featured": true,
+      "featuredRank": 1
+    },
+    {
+      "id": "xingdaomeng",
+      "name": "星岛梦",
+      "affUrl": "https://guangs.xingdaomeng.com/#/?code=1TynBYnR",
+      "affCode": "nmw888",
+      "affCodeNote": "新人注册 9 折",
+      "priceFrom": "¥8/月 · 60GB(年付)",
+      "priceNum": 8,
+      "trafficGb": 60,
+      "billing": "年付",
+      "founded": "",
+      "claims": [
+        "六年老牌",
+        "企业级内网专线",
+        "套餐种类多",
+        "支持不限时套餐",
+        "解锁丰富",
+        "订阅导入需联系客服"
+      ],
+      "featured": true,
+      "featuredRank": 2
+    },
+    {
+      "id": "civetnet",
+      "name": "灵猫网络",
+      "affUrl": "https://vip01.civetnet.com/#/?code=8MIAyxak",
+      "affCode": "lmao888",
+      "affCodeNote": "新人注册 9 折",
+      "priceFrom": "¥19/月 · 150GB(月付)",
+      "priceNum": 19,
+      "trafficGb": 150,
+      "billing": "月付",
+      "founded": "",
+      "claims": [
+        "企业级内网专线",
+        "套餐种类多",
+        "支持不限时套餐",
+        "解锁丰富",
+        "订阅导入需联系客服"
+      ],
+      "featured": true,
+      "featuredRank": 3
+    },
+    {
+      "id": "flycat",
+      "name": "飞猫云",
+      "affUrl": "https://guangs.flycataff.com/#/?code=6uq0Xe9y",
+      "affCode": "flycat888",
+      "affCodeNote": "新用户季付以上 8 折",
+      "priceFrom": "¥7/月 · 50GB(年付)",
+      "priceNum": 7,
+      "trafficGb": 50,
+      "billing": "年付",
+      "founded": "2023",
+      "claims": [
+        "IEPL 专线",
+        "性价比小包",
+        "流媒体全解锁",
+        "AI 全解锁",
+        "自研客户端",
+        "订阅导入需联系客服"
+      ],
+      "featured": false
+    },
+    {
+      "id": "v2yun",
+      "name": "唯兔云",
+      "affUrl": "https://guangs.v2yunvipaff.com/#/?code=xIutqOBA",
+      "affCode": "rabbit",
+      "affCodeNote": "新用户 9 折",
+      "priceFrom": "¥14.9/月 · 100GB",
+      "priceNum": 14.9,
+      "trafficGb": 100,
+      "billing": "未标注",
+      "founded": "2020",
+      "claims": [
+        "VLESS 协议",
+        "节点覆盖 60+",
+        "三网优化",
+        "智能负载均衡"
+      ],
+      "featured": true,
+      "featuredRank": 4
+    },
+    {
+      "id": "yuzou",
+      "name": "宇宙云",
+      "affUrl": "https://guangs.yuzoucloud.cc/#/register?code=yrThwMP1",
+      "affCode": "YUZHOU553",
+      "affCodeNote": "",
+      "priceFrom": "¥14.9/月 · 100GB",
+      "priceNum": 14.9,
+      "trafficGb": 100,
+      "billing": "未标注",
+      "founded": "",
+      "claims": [
+        "VLESS 协议",
+        "IEPL 专线",
+        "性价比小包",
+        "流媒体全解锁",
+        "自研客户端",
+        "订阅导入需联系客服"
+      ],
+      "featured": false
+    },
+    {
+      "id": "u1s1",
+      "name": "U1S1",
+      "affUrl": "https://guangs.vipaff.cc/#/?code=xhX5X22f",
+      "affCode": "akaka",
+      "affCodeNote": "",
+      "priceFrom": "¥20/月 · 120GB",
+      "priceNum": 20,
+      "trafficGb": 120,
+      "billing": "未标注",
+      "founded": "",
+      "claims": [
+        "VLESS 协议",
+        "IEPL 专线",
+        "流媒体全解锁",
+        "自研客户端",
+        "订阅导入需联系客服"
+      ],
+      "featured": false
+    },
+    {
+      "id": "jilian",
+      "name": "极连云",
+      "affUrl": "https://guangs.jlyvipaff.com/#/?code=VM1rKGUu",
+      "affCode": "ji8888",
+      "affCodeNote": "",
+      "priceFrom": "¥18/月 · 100GB",
+      "priceNum": 18,
+      "trafficGb": 100,
+      "billing": "未标注",
+      "founded": "",
+      "claims": [
+        "IEPL 专线",
+        "流媒体全解锁",
+        "AI 全解锁",
+        "自研客户端",
+        "订阅导入需联系客服"
+      ],
+      "featured": false
+    },
+    {
+      "id": "quanqiu",
+      "name": "全球云",
+      "affUrl": "https://guangs.gcvipaff.com/#/?code=Ov2nvU9C",
+      "affCode": "qqy7777",
+      "affCodeNote": "",
+      "priceFrom": "¥20/月 · 120GB",
+      "priceNum": 20,
+      "trafficGb": 120,
+      "billing": "未标注",
+      "founded": "",
+      "claims": [
+        "VLESS 协议",
+        "IEPL 专线",
+        "性价比小包",
+        "流媒体解锁",
+        "AI 全解锁",
+        "自研客户端",
+        "订阅导入需联系客服"
+      ],
+      "featured": false
+    },
+    {
+      "id": "guangnianti",
+      "name": "光年梯",
+      "affUrl": "https://guangs.gntaff.com/#/?code=X1FoxjGE",
+      "affCode": "gnt6666",
+      "affCodeNote": "",
+      "priceFrom": "¥18/月 · 110GB",
+      "priceNum": 18,
+      "trafficGb": 110,
+      "billing": "未标注",
+      "founded": "",
+      "claims": [
+        "VLESS 协议",
+        "IEPL 专线",
+        "性价比小包",
+        "流媒体全解锁",
+        "AI 全解锁",
+        "自研客户端",
+        "订阅导入需联系客服"
+      ],
+      "featured": false
+    },
+    {
+      "id": "yifan",
+      "name": "一翻云",
+      "affUrl": "https://guangs.1flyunaff.cc/#/register?code=Yr7FhB7r",
+      "affCode": "yfy6666",
+      "affCodeNote": "",
+      "priceFrom": "¥20/月 · 150GB",
+      "priceNum": 20,
+      "trafficGb": 150,
+      "billing": "未标注",
+      "founded": "",
+      "claims": [
+        "VLESS 协议",
+        "IEPL 专线",
+        "性价比小包",
+        "流媒体解锁",
+        "AI 全解锁",
+        "自研客户端",
+        "订阅导入需联系客服"
+      ],
+      "featured": false
+    },
+    {
+      "id": "ermao",
+      "name": "二猫云",
+      "affUrl": "https://guangs.2maoyunaff.cc/#/?code=7mjvgGbW",
+      "affCode": "ermao5555",
+      "affCodeNote": "",
+      "priceFrom": "¥20/月 · 130GB",
+      "priceNum": 20,
+      "trafficGb": 130,
+      "billing": "未标注",
+      "founded": "",
+      "claims": [
+        "VLESS 协议",
+        "IEPL 专线",
+        "性价比小包",
+        "流媒体解锁",
+        "AI 全解锁",
+        "自研客户端",
+        "订阅导入需联系客服"
+      ],
+      "featured": false
+    },
+    {
+      "id": "sogo",
+      "name": "sogo云",
+      "affUrl": "https://guangs.sogoyunaff.cc/#/En04H5u9",
+      "affCode": "sss777",
+      "affCodeNote": "",
+      "priceFrom": "¥25/月 · 150GB",
+      "priceNum": 25,
+      "trafficGb": 150,
+      "billing": "未标注",
+      "founded": "",
+      "claims": [
+        "VLESS 协议",
+        "IEPL 专线",
+        "性价比小包",
+        "流媒体全解锁",
+        "AI 全解锁",
+        "自研客户端",
+        "订阅导入需联系客服"
+      ],
+      "featured": false
+    },
+    {
+      "id": "kosing",
+      "name": "可信云",
+      "affUrl": "https://guangs.kosingaff.com/#/register?code=UYDtNlCY",
+      "affCode": "kkk333",
+      "affCodeNote": "",
+      "priceFrom": "¥25/月 · 150GB",
+      "priceNum": 25,
+      "trafficGb": 150,
+      "billing": "未标注",
+      "founded": "",
+      "claims": [
+        "VLESS 协议",
+        "IEPL 专线",
+        "性价比小包",
+        "流媒体全解锁",
+        "自研客户端",
+        "订阅导入需联系客服"
+      ],
+      "featured": false
+    },
+    {
+      "id": "sujie",
+      "name": "速界",
+      "affUrl": "https://guangs.speedworldaff.cc/#/register?code=xgXzEfZB",
+      "affCode": "sss1111",
+      "affCodeNote": "",
+      "priceFrom": "¥25/月 · 150GB",
+      "priceNum": 25,
+      "trafficGb": 150,
+      "billing": "未标注",
+      "founded": "",
+      "claims": [
+        "VLESS 协议",
+        "IEPL 专线",
+        "性价比小包",
+        "AI 全解锁",
+        "自研客户端",
+        "订阅导入需联系客服"
+      ],
+      "featured": false
+    },
+    {
+      "id": "kuaili",
+      "name": "快狸",
+      "affUrl": "https://guangs.kuailicloud.cc/#/register?code=AiqyM8oG",
+      "affCode": "kkk2222",
+      "affCodeNote": "",
+      "priceFrom": "¥25/月 · 150GB",
+      "priceNum": 25,
+      "trafficGb": 150,
+      "billing": "未标注",
+      "founded": "",
+      "claims": [
+        "VLESS 协议",
+        "IEPL 专线",
+        "流媒体全解锁",
+        "AI 全解锁",
+        "自研客户端",
+        "订阅导入需联系客服"
+      ],
+      "featured": false
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+---
+/**
+ * 每 GB 成本对照图 — 数据 = 官方最低套餐标价 ÷ 官方标注流量。
+ * 这是算术折算,不是性能/质量指标;不含任何本站未实测的数据。
+ */
+import brandsData from '../data/brands.json';
+
+interface Props {
+  /** 只显示前 N 家(按单价升序);省略则全部 */
+  limit?: number;
+  title?: string;
+}
+const { limit, title = '每 GB 成本对照(官方标价折算)' } = Astro.props;
+
+const rows = brandsData.brands
+  .map((b) => ({
+    name: b.name,
+    id: b.id,
+    perGb: b.priceNum / b.trafficGb,
+    priceFrom: b.priceFrom,
+    billing: b.billing,
+  }))
+  .sort((a, b) => a.perGb - b.perGb);
+const shown = limit ? rows.slice(0, limit) : rows;
+const max = Math.max(...shown.map((r) => r.perGb));
+---
+
+<figure class="my-8 border border-rule">
+  <figcaption class="rule-double border-t-0 border-b border-rule bg-paper-2 px-4 py-2.5">
+    <span class="text-xs font-semibold tracking-widest text-ink">{title}</span>
+    <span class="mt-0.5 block text-xs text-ink-2">
+      算法:官方最低套餐标价 ÷ 官方标注流量。数值越低=每 GB 越便宜,<strong class="font-semibold">不代表速度、稳定性或解锁能力</strong>。
+      核验时间 {brandsData.lastVerified}。
+    </span>
+  </figcaption>
+  <div class="divide-y divide-rule">
+    {shown.map((r) => (
+      <div class="grid grid-cols-[5.5rem_1fr_5.5rem] items-center gap-3 px-4 py-2">
+        <a href={`/review/${r.id}/`} class="truncate py-1 text-sm text-ink hover:text-seal">{r.name}</a>
+        <div class="h-3 bg-paper-2" role="presentation">
+          <div class="h-3 bg-seal" style={`width:${Math.round((r.perGb / max) * 100)}%`}></div>
+        </div>
+        <span class="text-right text-xs tabular-nums text-ink-2">
+          ¥{r.perGb.toFixed(2)}/GB
+          {r.billing === '年付' && <span class="block text-[0.68rem]">年付均摊</span>}
+        </span>
+      </div>
+    ))}
+  </div>
+  <p class="border-t border-rule px-4 py-2 text-xs text-ink-2">
+    标注「年付均摊」的品牌,该单价需一次性预付一年才能拿到;付款周期未标注的品牌请向客服确认。
+  </p>
+</figure>

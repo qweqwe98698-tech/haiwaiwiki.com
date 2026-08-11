@@ -1,0 +1,132 @@
+---
+import '../styles/global.css';
+import { SITE, SECTIONS } from '../data/site';
+import { orgJsonLd, websiteJsonLd } from '../lib/seo';
+
+interface Props {
+  title: string;
+  description: string;
+  /** 站内路径,如 /protocol/hysteria2/ */
+  path: string;
+  ogType?: 'website' | 'article';
+  noindex?: boolean;
+  /** 额外 JSON-LD 对象数组 */
+  jsonLd?: object[];
+}
+
+const { title, description, path, ogType = 'website', noindex = false, jsonLd = [] } = Astro.props;
+const canonical = `${SITE.url}${path}`;
+const ogImage = `${SITE.url}/og-default.png`;
+// 站长平台验证:在 Cloudflare Pages 的环境变量里设置后自动输出,不在仓库里存死值
+const googleVerify = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION;
+const bingVerify = import.meta.env.PUBLIC_BING_SITE_VERIFICATION;
+const isHome = path === '/';
+const blocks = [...(isHome ? [orgJsonLd(), websiteJsonLd()] : []), ...jsonLd];
+const navSections = SECTIONS.filter((s) => s.inNav);
+---
+
+<!doctype html>
+<html lang="zh-Hans">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {/* noindex 页面不输出 canonical:自指 canonical 与 noindex 同时存在会给爬虫矛盾信号 */}
+    {noindex ? <meta name="robots" content="noindex, nofollow" /> : <link rel="canonical" href={canonical} />}
+    <meta property="og:type" content={ogType} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content={`${SITE.name}｜${SITE.nameZh}`} />
+    <meta property="og:locale" content="zh_CN" />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={`${SITE.name} — ${SITE.nameZh}`} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    {googleVerify && <meta name="google-site-verification" content={googleVerify} />}
+    {bingVerify && <meta name="msvalidate.01" content={bingVerify} />}
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="alternate" type="application/rss+xml" title={`${SITE.nameZh} 全站更新`} href="/rss.xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    {blocks.map((b) => <script is:inline type="application/ld+json" set:html={JSON.stringify(b)} />)}
+  </head>
+  <body class="min-h-screen flex flex-col">
+    <a href="#main" class="skip-link">跳到主要内容</a>
+    <header class="mx-auto w-full max-w-[1120px] px-5">
+      <div class="flex items-baseline justify-between gap-6 pt-6 pb-4 flex-wrap">
+        <a href="/" class="shrink-0 leading-tight hover:no-underline">
+          <span class="block text-xl font-bold tracking-wide text-ink">Haiwai<span class="text-seal">Wiki</span></span>
+          <span class="block text-xs text-ink-2 tracking-[0.35em]">海外Wiki·词条式知识库</span>
+        </a>
+        <nav aria-label="主导航" class="hidden md:flex items-baseline gap-5 text-sm">
+          {navSections.map((s) => (
+            <a href={s.url} class="text-ink hover:text-seal">{s.name}</a>
+          ))}
+          <a href="/search/" class="text-ink-2 hover:text-seal" aria-label="站内搜索">检索</a>
+        </nav>
+        <details class="md:hidden relative">
+          <summary class="cursor-pointer list-none text-sm text-seal select-none py-2 px-1">目录 ☰</summary>
+          <nav aria-label="移动导航" class="absolute right-0 z-20 mt-2 w-64 border border-rule bg-paper rule-double">
+            {SECTIONS.map((s) => (
+              <a href={s.url} class="flex gap-3 items-baseline px-4 py-3 border-b border-rule last:border-b-0 hover:bg-paper-2 hover:no-underline">
+                <span class="index-num text-xs">{s.num}</span>
+                <span class="text-sm text-ink">{s.name}</span>
+              </a>
+            ))}
+            <a href="/search/" class="block px-4 py-3 text-sm text-ink-2 hover:bg-paper-2 hover:no-underline">站内检索 →</a>
+          </nav>
+        </details>
+      </div>
+      <div class="rule-double"></div>
+    </header>
+
+    <!-- 站内检索索引范围 = 可索引页面(404 与检索页自身除外) -->
+    <main id="main" class="mx-auto w-full max-w-[1120px] px-5 flex-1 pb-20" data-pagefind-body={noindex ? undefined : true}>
+      <slot />
+    </main>
+
+    <footer class="mx-auto w-full max-w-[1120px] px-5 pb-10">
+      <div class="rule-double mb-8"></div>
+      <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 text-sm">
+        <div>
+          <h2 class="text-xs text-ink-2 tracking-widest mb-3">栏目索引</h2>
+          <ul class="space-y-1.5">
+            {SECTIONS.map((s) => (
+              <li>
+                <a href={s.url} class="text-ink hover:text-seal"><span class="index-num text-xs mr-2">{s.num}</span>{s.name}</a>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <h2 class="text-xs text-ink-2 tracking-widest mb-3">关于</h2>
+          <ul class="space-y-1.5">
+            <li><a href="/about/">关于本站</a></li>
+            <li><a href="/about/editorial/">编辑规范</a></li>
+            <li><a href="/about/disclaimer/">免责声明与推广披露</a></li>
+            <li><a href="/about/privacy/">隐私政策</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2 class="text-xs text-ink-2 tracking-widest mb-3">订阅与索引</h2>
+          <ul class="space-y-1.5">
+            <li><a href="/rss.xml">RSS 更新订阅</a></li>
+            <li><a href="/sitemap/">网站地图</a></li>
+            <li><a href="/sitemap-index.xml">Sitemap XML</a></li>
+            <li><a href="/search/">站内检索</a></li>
+          </ul>
+        </div>
+        <div class="text-ink-2 leading-relaxed">
+          <p>{SITE.nameZh}编辑部维护。内容区分事实与推测,注明来源与核验时间;未实测不写测速数据。</p>
+          <p class="mt-3">本站含推广链接,已在<a href="/about/disclaimer/" class="underline underline-offset-2">披露页</a>说明。</p>
+        </div>
+      </div>
+      <p class="mt-8 text-xs text-ink-2">© 2026 {SITE.name}｜{SITE.nameZh} · haiwaiwiki.com</p>
+    </footer>
+  </body>
+</html>

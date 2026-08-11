@@ -1,0 +1,56 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import { breadcrumbJsonLd, pageJsonLd } from '../../lib/seo';
+import { STATIC_PAGES } from '../../data/site';
+
+const meta = STATIC_PAGES['/about/editorial/'];
+const jsonLd = [
+  breadcrumbJsonLd([
+    { name: '首页', url: '/' },
+    { name: '关于本站', url: '/about/' },
+    { name: '编辑规范', url: '/about/editorial/' },
+  ]),
+  pageJsonLd('AboutPage', { name: meta.title, description: meta.description, url: '/about/editorial/' }),
+];
+---
+
+<BaseLayout title={meta.title} description={meta.description} path="/about/editorial/" jsonLd={jsonLd}>
+  <Breadcrumb crumbs={[{ name: '关于本站', url: '/about/' }, { name: '编辑规范', url: '/about/editorial/' }]} />
+  <article class="entry-body mx-auto mt-10">
+    <h1 class="text-2xl font-bold">编辑规范:内容如何生产与核验</h1>
+    <p>本页是 HaiwaiWiki 全部内容共同遵守的规则,读者可以据此判断每篇内容的可信程度。</p>
+
+    <h2>数据来源分级</h2>
+    <table>
+      <thead>
+        <tr><th>标注</th><th>含义</th><th>可信程度</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>已核验 / 实测</td><td>编辑部自行购买、安装、测试后得到的结果</td><td>本站为结果负责,附测试时间</td></tr>
+        <tr><td>官方资料</td><td>照录品牌方公开页面或其提供的宣传信息</td><td>未经本站验证,措辞照录并明确标注</td></tr>
+        <tr><td>公开资料 / 编辑整理</td><td>来自公开文档、社区讨论的归纳整理</td><td>指明来源类型,不当作定论</td></tr>
+        <tr><td>待核验</td><td>暂时无法验证的信息</td><td>明确提示读者自行确认</td></tr>
+      </tbody>
+    </table>
+
+    <h2>三条铁律</h2>
+    <ol>
+      <li><strong>区分事实与推测。</strong>推测永远伴随「可能/推测/尚无证据」等限定词,不写成结论。</li>
+      <li><strong>注明时间。</strong>价格、套餐、解锁、可用性描述必须带核验时间(截至某年某月)。</li>
+      <li><strong>不伪造数据。</strong>没有实测就没有测速图、没有延迟数字、没有评分。宁可缺一个模块,不造一个数字。</li>
+    </ol>
+
+    <h2>更新机制</h2>
+    <p>
+      每篇词条展示发布时间与最近修订时间;正文底部的「核验说明」标注信息状态。
+      客户端教程注明验证时的软件版本;发现内容过期,读者可<a href="/about/">邮件提醒编辑部</a>,我们修订后更新时间戳。
+    </p>
+
+    <h2>AI 工具的使用</h2>
+    <p>
+      编辑部在资料整理与初稿阶段使用 AI 工具,但每篇发布内容都经过人工确定的事实核验规则约束:
+      上述三条铁律优先于任何生成效率——违反铁律的内容不会发布。
+    </p>
+  </article>
+</BaseLayout>

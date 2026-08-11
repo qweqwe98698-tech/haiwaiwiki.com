@@ -1,0 +1,35 @@
+{
+  "name": "haiwaiwiki",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "HaiwaiWiki | 海外Wiki — 中文海外网络工具知识库",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build && pagefind --site dist && node scripts/sitemap-lastmod.mjs",
+    "submit:indexnow": "node scripts/indexnow.mjs",
+    "gen:og": "node scripts/gen-og.mjs",
+    "preview": "astro preview",
+    "check": "astro check",
+    "audit:seo": "node scripts/seo-audit.mjs",
+    "lint:content": "node scripts/content-lint.mjs",
+    "verify": "node scripts/content-lint.mjs && astro check && pnpm build && node scripts/seo-audit.mjs"
+  },
+  "dependencies": {
+    "@astrojs/mdx": "^4.3.14",
+    "@astrojs/rss": "^4.0.11",
+    "@astrojs/sitemap": "^3.4.1",
+    "astro": "^5.12.0",
+    "sharp": "^0.34.2"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@tailwindcss/vite": "^4.1.11",
+    "micromark": "^4.0.2",
+    "pagefind": "^1.3.0",
+    "rehype-autolink-headings": "^7.1.0",
+    "rehype-slug": "^6.0.0",
+    "tailwindcss": "^4.1.11",
+    "typescript": "^5.8.3"
+  }
+}

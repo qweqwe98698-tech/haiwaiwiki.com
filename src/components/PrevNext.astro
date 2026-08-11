@@ -1,0 +1,32 @@
+---
+interface Link {
+  title: string;
+  url: string;
+}
+interface Props {
+  prev?: Link;
+  next?: Link;
+}
+const { prev, next } = Astro.props;
+---
+
+{(prev || next) && (
+  <nav aria-label="上一篇与下一篇" class="rule-hair mt-12 pt-5 grid gap-4 sm:grid-cols-2 text-sm">
+    <div>
+      {prev && (
+        <>
+          <p class="text-xs text-ink-2 mb-1">上一条</p>
+          <a href={prev.url}>{prev.title}</a>
+        </>
+      )}
+    </div>
+    <div class="sm:text-right">
+      {next && (
+        <>
+          <p class="text-xs text-ink-2 mb-1">下一条</p>
+          <a href={next.url}>{next.title}</a>
+        </>
+      )}
+    </div>
+  </nav>
+)}

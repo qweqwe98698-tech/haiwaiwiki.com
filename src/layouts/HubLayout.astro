@@ -1,0 +1,85 @@
+---
+import type { CollectionKey } from 'astro:content';
+import BaseLayout from './BaseLayout.astro';
+import Breadcrumb from '../components/Breadcrumb.astro';
+import IndexRow from '../components/IndexRow.astro';
+import { breadcrumbJsonLd, itemListJsonLd } from '../lib/seo';
+import { publishedEntries } from '../lib/entries';
+import { SECTIONS, STATIC_PAGES, entryUrl } from '../data/site';
+
+interface Props {
+  /** 栏目 URL,如 /protocol/ */
+  url: string;
+  /** 列表标题,默认「全部条目」 */
+  listTitle?: string;
+}
+
+const { url, listTitle = '全部条目' } = Astro.props;
+const section = SECTIONS.find((s) => s.url === url);
+if (!section) throw new Error(`未登记的栏目:${url}`);
+const meta = STATIC_PAGES[url];
+if (!meta) throw new Error(`STATIC_PAGES 缺少:${url}`);
+
+const entries = section.collection
+  ? (await publishedEntries(section.collection as CollectionKey)).reverse()
+  : [];
+const rows = entries.map((e) => ({
+  title: e.data.title,
+  url: entryUrl(e.collection, e.id),
+  brief: e.data.description,
+  meta: [
+    e.data.contentType,
+    `发布 ${e.data.pubDate.getFullYear()}-${String(e.data.pubDate.getMonth() + 1).padStart(2, '0')}`,
+    ...(e.data.lastVerified ? [`核验 ${e.data.lastVerified}`] : []),
+  ],
+}));
+
+const jsonLd: object[] = [breadcrumbJsonLd([{ name: '首页', url: '/' }, { name: section.name, url }])];
+if (rows.length > 0) jsonLd.push(itemListJsonLd(rows.map((r) => ({ name: r.title, url: r.url }))));
+---
+
+<BaseLayout title={meta.title} description={meta.description} path={url} jsonLd={jsonLd}>
+  <Breadcrumb crumbs={[{ name: section.name, url }]} />
+
+  <div class="mt-10 grid gap-10 lg:grid-cols-[280px_1fr]">
+    <aside>
+      <p class="index-num text-3xl">{section.num}</p>
+      <h1 class="mt-2 text-2xl font-bold text-ink">{section.name}</h1>
+      <p class="mt-3 text-sm text-ink-2 leading-relaxed">{section.brief}</p>
+      <div class="rule-hair mt-6 pt-4 text-sm leading-relaxed text-ink-2">
+        <slot name="aside" />
+      </div>
+    </aside>
+
+    <div>
+      <div class="entry-body text-[0.95rem] text-ink-2 leading-relaxed">
+        <slot />
+      </div>
+
+      <section class="mt-10">
+        <h2 class="text-xs tracking-widest text-ink-2 font-semibold mb-1">{listTitle}</h2>
+        {rows.length > 0 ? (
+          <div>
+            {rows.map((r, i) => (
+              <IndexRow
+                num={String(rows.length - i).padStart(2, '0')}
+                title={r.title}
+                url={r.url}
+                brief={r.brief}
+                meta={r.meta}
+              />
+            ))}
+          </div>
+        ) : (
+          <p class="border-t border-b border-rule py-6 text-sm text-ink-2">
+            本栏目条目正在按编辑规范逐篇建立,先看<a href="/about/editorial/">内容如何生产与核验</a>。
+          </p>
+        )}
+      </section>
+
+      <div class="mt-10">
+        <slot name="after-list" />
+      </div>
+    </div>
+  </div>
+</BaseLayout>

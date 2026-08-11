@@ -1,0 +1,62 @@
+---
+/**
+ * 合作展示位 — 顺序由 brands.json 的 featuredRank 决定,属于商务合作排序。
+ * 与本站的评测结论、价格对照表完全分离(见 /about/disclaimer/)。
+ */
+import brandsData from '../data/brands.json';
+
+interface Props {
+  /** compact = 用于栏目页的紧凑版(不展开官方宣称) */
+  compact?: boolean;
+  title?: string;
+}
+const { compact = false, title = '合作展示位' } = Astro.props;
+
+const featured = brandsData.brands
+  .filter((b) => b.featured)
+  .sort((a, b) => (a.featuredRank ?? 99) - (b.featuredRank ?? 99));
+const rel = 'nofollow sponsored noopener noreferrer';
+---
+
+<section class="my-8">
+  <div class="flex items-baseline justify-between gap-4 flex-wrap">
+    <h2 class="text-xs tracking-widest text-ink-2 font-semibold">{title}</h2>
+    <p class="text-xs text-ink-2">核验时间 {brandsData.lastVerified}</p>
+  </div>
+  <p class="mt-1 text-xs text-ink-2 leading-relaxed">
+    以下为商务合作展示,<strong class="font-semibold text-ink">展示顺序由合作关系决定,不代表测速、质量或评测排名</strong>。
+    卖点为品牌方官方宣称,未经本站验证;链接为推广链接(<a href="/about/disclaimer/" class="underline underline-offset-2">披露</a>)。
+    {compact ? (
+      <>客观对照请看<a href="/directory/" class="underline underline-offset-2">按每 GB 单价排序的档案表</a>。</>
+    ) : (
+      <>客观数据请看下方按每 GB 单价排序的完整档案表。</>
+    )}
+  </p>
+
+  <div class:list={['mt-3 grid gap-px border border-rule bg-rule', compact ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-2']}>
+    {featured.map((b) => (
+      <div class="bg-paper p-4 flex flex-col">
+        <div class="flex items-baseline gap-2">
+          <span class="index-num text-xs">{String(b.featuredRank).padStart(2, '0')}</span>
+          <a href={`/review/${b.id}/`} class="font-bold text-ink hover:text-seal">{b.name}</a>
+        </div>
+        <p class="mt-1.5 text-sm text-ink-2">{b.priceFrom}</p>
+        {!compact && (
+          <p class="mt-2 text-xs text-ink-2 leading-relaxed">
+            官方宣称:{b.claims.slice(0, 5).join(' · ')}
+          </p>
+        )}
+        {b.affCode && (
+          <p class="mt-2 text-xs text-ink-2">
+            优惠码 <code class="border border-rule bg-paper-2 px-1.5 py-0.5 rounded-sm text-ink">{b.affCode}</code>
+            {b.affCodeNote && <span class="ml-1">({b.affCodeNote})</span>}
+          </p>
+        )}
+        <p class="mt-3 pt-2 border-t border-rule text-sm flex gap-4">
+          <a href={b.affUrl} rel={rel} target="_blank">官网 ↗</a>
+          <a href={`/review/${b.id}/`} class="text-ink-2 hover:text-seal">评测档案</a>
+        </p>
+      </div>
+    ))}
+  </div>
+</section>

@@ -1,0 +1,73 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import { breadcrumbJsonLd, pageJsonLd } from '../../lib/seo';
+import { STATIC_PAGES, SITE } from '../../data/site';
+
+const meta = STATIC_PAGES['/about/privacy/'];
+const jsonLd = [
+  breadcrumbJsonLd([
+    { name: '首页', url: '/' },
+    { name: '关于本站', url: '/about/' },
+    { name: '隐私政策', url: '/about/privacy/' },
+  ]),
+  pageJsonLd('WebPage', { name: meta.title, description: meta.description, url: '/about/privacy/' }),
+];
+---
+
+<BaseLayout title={meta.title} description={meta.description} path="/about/privacy/" jsonLd={jsonLd}>
+  <Breadcrumb crumbs={[{ name: '关于本站', url: '/about/' }, { name: '隐私政策', url: '/about/privacy/' }]} />
+  <article class="entry-body mx-auto mt-10">
+    <h1 class="text-2xl font-bold">隐私政策</h1>
+    <p>本页说明 haiwaiwiki.com 会与不会收集哪些信息。最后更新:2026-08。</p>
+
+    <h2>本站不收集什么</h2>
+    <p>
+      本站是纯静态网站,没有用户系统,<strong>不提供注册、不设置登录、不收集账号信息</strong>。
+      具体而言,本站不会:
+    </p>
+    <ul>
+      <li>要求你提供姓名、手机号、邮箱或任何身份信息;</li>
+      <li>存储你的搜索关键词——站内检索完全在你的浏览器本地执行(Pagefind),检索词不会发送到任何服务器;</li>
+      <li>使用行为追踪 Cookie、广告像素或跨站追踪脚本;</li>
+      <li>接入第三方评论、客服或社交插件。</li>
+    </ul>
+
+    <h2>浏览器本地存储</h2>
+    <p>
+      本站不写入 Cookie。深浅色主题跟随你的系统设置,不需要保存偏好;
+      站内检索的索引文件由浏览器按常规方式缓存,与其他静态资源无异,可随时通过清除浏览器缓存删除。
+    </p>
+
+    <h2>托管服务商的访问日志</h2>
+    <p>
+      本站托管于 Cloudflare Pages。与所有网站一样,托管与 CDN 服务商在提供服务的过程中
+      会产生服务器访问日志(通常包含 IP 地址、时间、请求路径与 User-Agent),
+      用于安全防护、流量统计与故障排查。这部分数据由服务商按其自身政策处理,本站无法关闭,
+      也不会主动导出、留存或用于分析个人行为。
+    </p>
+
+    <h2>外部链接与推广链接</h2>
+    <p>
+      本站包含指向第三方网站的链接,其中部分为推广链接(详见
+      <a href="/about/disclaimer/">免责声明与推广披露</a>)。点击后你将离开本站,
+      对方网站如何收集与使用数据由其自身隐私政策决定,不在本站控制范围内。
+      推广链接可能携带用于结算的来源标识参数——它标识的是「流量来自本站」,不包含你的个人信息。
+    </p>
+    <p>
+      建议在进入任何机场服务的注册或付款页面前,先阅读对方的隐私政策与服务条款。
+      关于代理服务本身可能接触到哪些数据,见
+      <a href="/risk/privacy-and-logs/">机场会记录我的访问记录吗</a>。
+    </p>
+
+    <h2>未成年人</h2>
+    <p>本站内容面向成年读者,不针对未成年人收集任何信息。</p>
+
+    <h2>政策变更</h2>
+    <p>
+      本政策如有调整,将直接更新本页内容与顶部的更新时间,不另行通知。
+      对本政策有疑问,或希望指出本站内容中的错误,请联系
+      <a href={`mailto:${SITE.email}`}>{SITE.email}</a>。
+    </p>
+  </article>
+</BaseLayout>

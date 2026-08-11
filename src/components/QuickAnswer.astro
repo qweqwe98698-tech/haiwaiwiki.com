@@ -1,0 +1,12 @@
+---
+/** 快答块:正文前 40–100 字直接回答核心问题(GEO)。 */
+interface Props {
+  text: string;
+}
+const { text } = Astro.props;
+---
+
+<div class="border-l-[3px] border-seal bg-seal-2 px-5 py-4">
+  <p class="text-xs tracking-widest text-seal font-semibold">快答</p>
+  <p class="mt-1.5 text-[0.98rem] leading-relaxed text-ink">{text}</p>
+</div>

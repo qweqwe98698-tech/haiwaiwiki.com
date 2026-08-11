@@ -1,0 +1,115 @@
+---
+import type { CollectionKey } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SectionDial from '../components/SectionDial.astro';
+import IndexRow from '../components/IndexRow.astro';
+import { STATIC_PAGES, SITE, entryUrl, COLLECTION_BASE } from '../data/site';
+import { publishedEntries, resolveRelated } from '../lib/entries';
+
+const meta = STATIC_PAGES['/'];
+
+// 编辑精选(人工挑选,不是最新列表的复制)
+const picks = await resolveRelated([
+  'airport/how-to-choose',
+  'risk/exit-scam-signals',
+  'protocol/iplc-vs-iepl',
+  'tutorial/clash-import-subscription',
+  'tools/chatgpt-not-working',
+]);
+const pickBriefs: Record<string, string> = {
+  '/airport/how-to-choose/': '不给榜单,给决策框架:预算、用途、风险三步定标准。',
+  '/risk/exit-scam-signals/': '付年费之前,先对照这份跑路前兆检查清单。',
+  '/protocol/iplc-vs-iepl/': '商家最爱写的两个词,区别其实可以一句话讲清。',
+  '/tutorial/clash-import-subscription/': '从订阅链接到连上网,Clash 全流程与常见报错。',
+  '/tools/chatgpt-not-working/': '代理明明连着,ChatGPT 还是不能用?按顺序排查。',
+};
+
+// 最新修订:全集合按 修订时间||发布时间 倒序取 6
+const allEntries = (
+  await Promise.all(
+    (Object.keys(COLLECTION_BASE) as CollectionKey[]).map((c) => publishedEntries(c))
+  )
+).flat();
+const latest = allEntries
+  .sort(
+    (a, b) =>
+      (b.data.updatedDate ?? b.data.pubDate).valueOf() - (a.data.updatedDate ?? a.data.pubDate).valueOf()
+  )
+  .slice(0, 6);
+const fmt = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+---
+
+<BaseLayout title={meta.title} description={meta.description} path="/">
+  <!-- 刊头语 + 检索 -->
+  <section class="mt-12 max-w-[720px]">
+    <p class="text-xs tracking-[0.3em] text-ink-2">中文·词条式·持续修订</p>
+    <h1 class="mt-3 text-[1.7rem] sm:text-3xl font-bold leading-[1.4]">
+      机场与海外网络工具的知识,<br />在这里被整理成<span class="text-seal">可查证的词条</span>。
+    </h1>
+    <p class="mt-4 text-[0.95rem] text-ink-2 leading-relaxed">
+      {SITE.tagline}区分事实与推测,注明来源与核验时间;没有实测,就不写测速数字。
+    </p>
+    <form action="/search/" method="get" class="mt-6 flex max-w-md border border-rule bg-paper-2 focus-within:border-seal">
+      <input
+        type="search"
+        name="q"
+        placeholder="检索词条:如 IPLC、Clash、跑路……"
+        class="w-full bg-transparent px-4 py-2.5 text-sm outline-none placeholder:text-ink-2"
+        aria-label="站内检索"
+      />
+      <button type="submit" class="shrink-0 px-4 text-sm text-seal font-semibold">检索</button>
+    </form>
+  </section>
+
+  <!-- 00 索引:栏目号码盘 -->
+  <section class="mt-14">
+    <h2 class="text-xs tracking-widest text-ink-2 font-semibold mb-3"><span class="index-num mr-2">00</span>栏目索引</h2>
+    <SectionDial />
+  </section>
+
+  <!-- 编辑精选 -->
+  <section class="mt-14 grid gap-10 lg:grid-cols-[1fr_320px]">
+    <div>
+      <h2 class="text-xs tracking-widest text-ink-2 font-semibold mb-1">本期编辑精选</h2>
+      <div>
+        {picks.map((p, i) => (
+          <IndexRow num={String(i + 1).padStart(2, '0')} title={p.title} url={p.url} brief={pickBriefs[p.url]} />
+        ))}
+      </div>
+    </div>
+    <aside class="lg:border-l lg:border-rule lg:pl-8">
+      <h2 class="text-xs tracking-widest text-ink-2 font-semibold">编辑部的三条规矩</h2>
+      <ol class="mt-3 space-y-3 text-sm leading-relaxed text-ink-2 list-none">
+        <li><span class="index-num mr-2">一</span>区分事实与推测,推测不写成结论。</li>
+        <li><span class="index-num mr-2">二</span>价格、解锁、可用性必注核验时间。</li>
+        <li><span class="index-num mr-2">三</span>没有实测,不写测速数字、不打分。</li>
+      </ol>
+      <p class="mt-4 text-xs text-ink-2">
+        详见<a href="/about/editorial/">编辑规范</a>与<a href="/about/disclaimer/">推广披露</a>。
+      </p>
+      <div class="rule-hair mt-6 pt-5">
+        <h2 class="text-xs tracking-widest text-ink-2 font-semibold">从哪里开始</h2>
+        <ul class="mt-3 space-y-2 text-sm">
+          <li><span class="text-seal mr-1">→</span><a href="/airport/how-to-choose/">第一次选机场</a></li>
+          <li><span class="text-seal mr-1">→</span><a href="/tutorial/">订阅买好了,怎么用</a></li>
+          <li><span class="text-seal mr-1">→</span><a href="/tools/">连上了但应用不能用</a></li>
+        </ul>
+      </div>
+    </aside>
+  </section>
+
+  <!-- 最新修订 -->
+  <section class="mt-14">
+    <h2 class="text-xs tracking-widest text-ink-2 font-semibold mb-1">最新收录与修订</h2>
+    <div class="grid sm:grid-cols-2 sm:gap-x-10">
+      {latest.map((e) => (
+        <IndexRow
+          title={e.data.title}
+          url={entryUrl(e.collection, e.id)}
+          meta={[e.data.contentType, `${e.data.updatedDate ? '修订' : '发布'} ${fmt(e.data.updatedDate ?? e.data.pubDate)}`]}
+        />
+      ))}
+    </div>
+  </section>
+</BaseLayout>
