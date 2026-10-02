@@ -1,0 +1,1271 @@
+---
+title: TUN 模式 DNS 泄露深度解剖：从内核路由到 WFP 过滤的万字排障指南
+description: 面向 Windows/macOS/Linux 代理用户的深度教程，从内核网络协议栈、路由跃点数、WFP 驱动层出发，完整剖析 TUN 模式 DNS 泄露的成因与排查路径。涵盖 Fake-IP 与 Redir-Host 抓包特征对比、Wireshark 验证步骤及 sing-box/Clash Ver
+pubDate: 2026-10-02
+primaryKeyword: TUN 模式 DNS 泄露
+secondaryKeywords:
+  - Clash TUN 模式配置
+  - 虚拟网卡 DNS 泄露排查
+  - Fake-IP 与 Redir-Host 区别
+  - sing-box 虚拟网卡
+searchIntent: Tutorial
+contentType: 教程
+quickAnswer: TUN 模式 DNS 泄露的本质是操作系统在虚拟网卡之外仍通过物理网卡或系统解析器发出明文 DNS 查询。根治需从三处入手：将物理网卡 DNS 置空、调整路由 Metric 使 TUN 接口优先、用 WFP 或防火墙规则阻断非 TUN 接口的 53 端口出站，并优先采用 Fake-IP 模式让域名解析完全由代理内核接管。
+relatedSlugs:
+  - tools/telegram-not-connecting
+  - free-nodes/why-free-nodes-fail
+  - airport/high-latency
+pillar: tutorial
+reviewStatus: 已核验
+lastVerified: 2026-10
+tags:
+  - TUN 模式
+  - DNS 泄露
+  - Fake-IP
+  - sing-box
+faq:
+  - q: 为什么开启了 TUN 模式，Wireshark 仍能抓到物理网卡上的 DNS 查询？
+    a: 因为 TUN 只接管了路由表指向它的流量，而操作系统解析器可能绕过路由表直接向物理网卡绑定的 DNS 服务器发送查询，或应用使用 DoH/DoT 时系统解析缓存未命中导致回退到明文 53 端口。
+  - q: Fake-IP 和 Redir-Host 在防 DNS 泄露上的核心差异是什么？
+    a: Fake-IP 由代理内核即时返回虚假 IP，真实域名解析完全在代理远端完成，本地无明文 DNS 出站；Redir-Host 依赖本地解析结果再转发，若系统解析器配置不当仍会向物理网卡 DNS 发出明文查询。
+  - q: 多网卡并发时，如何确保 TUN 接口的路由优先级最高？
+    a: 在 Windows 中用 route add 或 Set-NetIPInterface 降低 TUN 接口的 InterfaceMetric；Linux 下用 ip route 调整 metric 值；macOS 通过 networksetup 调整服务顺序，确保默认路由指向 utun 设备。
+---
+
+## TUN 虚拟网卡的内核网络协议栈工作机理
+
+TUN 设备的本质是内核提供给用户态程序的一个"半成品网卡"——它具备网络接口的全部特征（MTU、路由表项、IP 地址），但没有物理介质。用户态程序通过字符设备或专用 API 读写 IP 数据包，内核协议栈则将其视为一条正常的出入口。DNS 泄露的根因，往往就埋在这条"半成品"路径与真实物理网卡路径的竞争关系里。
+
+### Linux TUN/TAP 字符设备与网络命名空间绑定
+
+Linux 下 TUN 设备通过 `/dev/net/tun` 字符设备创建。核心系统调用链如下：
+
+```c
+int fd = open("/dev/net/tun", O_RDWR);
+struct ifreq ifr = {0};
+ifr.ifr_flags = IFF_TUN | IFF_NO_PI;  // IFF_NO_PI: 不附加4字节packet info头
+strncpy(ifr.ifr_name, "tun0", IFNAMSIZ);
+ioctl(fd, TUNSETIFF, &ifr);
+// 此后 read(fd, buf, len) 读取的是内核注入的IP包
+// write(fd, buf, len) 将用户态构造的IP包注入内核协议栈
+```
+
+当应用调用 `write()` 向 TUN fd 写入数据时，内核走 `tun_chr_write_iter` → `tun_get_user` → `netif_rx_ni`，将 skb 推入协议栈的 RX 路径。反向，内核路由决策选中 `tun0` 作为出接口时，skb 经 `dev_queue_xmit` → `tun_net_xmit` → `tun_chr_read_iter` 挂入等待队列，用户态程序 `read()` 取走。
+
+关键点在于路由决策。Linux 使用最长前缀匹配（LPM），如果 TUN 程序只压入 `0.0.0.0/1` 和 `128.0.0.0/1` 两条路由（常见的"半默认路由"策略），那么 DNS 服务器地址如果是 `8.8.8.8`，会命中 `0.0.0.0/1`，走 TUN。但如果 DNS 服务器是 `192.168.1.1`（本地路由器），它命中的是物理网卡所在的 `192.168.1.0/24` 直连路由——**直连路由优先级永远高于默认路由**，DNS 查询直接从物理网卡出去，TUN 程序根本看不到。
+
+验证方法：
+
+```bash
+ip route show table all | grep -E "default|192.168"
+# 查看是否有 192.168.1.0/24 dev eth0 proto kernel scope link src 192.168.1.100
+# 这条路由的存在意味着发往 192.168.1.1 的DNS查询不会经过tun0
+```
+
+在容器或网络命名空间场景下更复杂。`ip netns exec ns1` 创建的命名空间中，TUN 设备必须显式迁移：
+
+```bash
+ip link set tun0 netns ns1
+```
+
+否则命名空间内的进程看不到该设备，DNS 查询走命名空间默认路由，直接泄露到物理网卡。
+
+### Linux TUN 设备读写系统调用流程
+
+```
+应用层 write(fd, ip_packet, len)
+        │
+        ▼
+  ┌─────────────────┐
+  │ tun_chr_write_iter │
+  └────────┬────────┘
+           │ copy_from_iter → skb
+           ▼
+  ┌─────────────────┐
+  │  tun_get_user    │ ← 检查IFF_NO_PI决定是否剥离4字节头
+  └────────┬────────┘
+           │ 设置 skb->dev = tun0, skb->protocol
+           ▼
+  ┌─────────────────┐
+  │  netif_rx_ni     │ ← 将skb送入协议栈RX路径
+  └────────┬────────┘
+           │
+           ▼
+  ┌─────────────────────────────┐
+  │ ip_rcv → 路由查找 → 本地交付或转发 │
+  └─────────────────────────────┘
+
+应用层 read(fd, buf, len)
+        │
+        ▼
+  ┌─────────────────┐
+  │ tun_chr_read_iter│ ← 从tun->readq等待队列取skb
+  └────────┬────────┘
+           │ skb_copy_datagram_iter → 用户缓冲区
+           ▼
+  ┌─────────────────┐
+  │  返回IP包给用户态 │
+  └─────────────────┘
+```
+
+### Windows WFP 过滤层与 TUN 驱动交互
+
+Windows 没有 TUN 字符设备的概念。TUN 驱动（如 Wintun）注册为 NDIS 轻量过滤驱动（LWF）或协议驱动，WFP（Windows Filtering Platform）在更上层拦截。
+
+数据包路径：
+
+```
+应用 sendto() → Winsock → AFD.sys → TCPIP.sys
+                                          │
+                                          ▼
+                              ┌───────────────────────┐
+                              │   WFP ALE层 (Connect)  │ ← 连接重定向决策点
+                              └───────────┬───────────┘
+                                          │
+                              ┌───────────▼───────────┐
+                              │ WFP Transport层 (UDP)  │ ← DNS查询在此被分类
+                              └───────────┬───────────┘
+                                          │
+                              ┌───────────▼───────────┐
+                              │   WFP 网络层 (IP)      │ ← 路由前最后拦截点
+                              └───────────┬───────────┘
+                                          │
+                              ┌───────────▼───────────┐
+                              │  路由决策 (FIB)         │
+                              └───────────┬───────────┘
+                                          │
+                         ┌────────────────┼────────────────┐
+                         ▼                ▼                ▼
+                  物理网卡NDIS      Wintun LWF       回环接口
+```
+
+WFP 的 `FWPM_LAYER_ALE_AUTH_CONNECT_V4` 层是 TUN 客户端实现流量劫持的关键。客户端在此注册 callout，对匹配的流量调用 `FwpsInjectNetworkSendAsync` 将数据包重注入到 Wintun 接口。但 DNS 查询如果使用 `DnsQuery_A` API，Windows DNS Client 服务（`dnscache`）会缓存并可能绕过 WFP 的 ALE 层——它使用自己的 socket 池，且部分查询走 `Nsi` 内核接口而非 Winsock。
+
+Wintun 驱动本身通过 `WintunSendPacket` / `WintunReceivePacket` 环形缓冲区与用户态交换数据。与 Linux TUN 不同，Wintun 不暴露字符设备，而是通过 IOCTL 和共享内存映射：
+
+```c
+// Wintun 会话建立
+WINTUN_SESSION_HANDLE session = WintunStartSession(adapter, 0x400000);
+// 发送：获取环形缓冲区写指针
+BYTE* packet = WintunAllocateSendPacket(session, packetSize);
+memcpy(packet, ipData, packetSize);
+WintunSendPacket(session, packet);
+```
+
+DNS 泄露在 Windows 上的典型表现：TUN 客户端设置了 `0.0.0.0/0` 路由但未修改接口 metric，物理网卡的默认路由 metric 更低（通常 25 vs TUN 的 5），导致 DNS 查询从物理网卡发出。检查命令：
+
+```powershell
+Get-NetRoute -DestinationPrefix "0.0.0.0/0" | Select-Object ifIndex, NextHop, RouteMetric, InterfaceMetric
+# InterfaceMetric 值最小的接口优先
+```
+
+### macOS utun 控制通道与内核扩展协作
+
+macOS 的 utun 是内核内置的虚拟接口，通过 `PF_SYSTEM` 域 socket 控制：
+
+```c
+int fd = socket(PF_SYSTEM, SOCK_DGRAM, SYSPROTO_CONTROL);
+struct ctl_info info = {0};
+strncpy(info.ctl_name, "com.apple.net.utun_control", MAX_KCTL_NAME);
+ioctl(fd, CTLIOCGINFO, &info);
+struct sockaddr_ctl addr = {
+    .sc_id = info.ctl_id,
+    .sc_unit = 0  // 内核分配utun编号
+};
+connect(fd, (struct sockaddr*)&addr, sizeof(addr));
+// 读写：前4字节为地址族(AF_INET/AF_INET6)
+```
+
+utun 控制消息结构：
+
+| 字段 | 长度 | 说明 |
+|------|------|------|
+| Address Family | 4 bytes | AF_INET=2, AF_INET6=30，网络字节序 |
+| IP Header | 20+ bytes | 标准 IPv4 头，含 checksum |
+| Payload | 变长 | TCP/UDP 段 |
+
+macOS 的路由表使用 `PF_ROUTE` socket 操作。TUN 客户端通常添加两条路由：
+
+```
+route add -net 0.0.0.0/1 -interface utun0
+route add -net 128.0.0.0/1 -interface utun0
+```
+
+但 macOS 的 DNS 解析走 `mDNSResponder`，它监听 `configd` 的网络状态变化。如果 TUN 接口未通过 `SystemConfiguration` 框架设置 DNS 服务器，`mDNSResponder` 会继续使用物理网卡的 DNS 配置。更隐蔽的是，`mDNSResponder` 对 `.local` 域名的查询走多播，完全绕过 utun。
+
+检查 utun 是否真正接管 DNS：
+
+```bash
+scutil --dns | grep -A5 "resolver #1"
+# 查看 nameserver 是否指向 TUN 客户端预期的地址
+```
+
+### 三平台数据包路径对比
+
+| 维度 | Linux | Windows | macOS |
+|------|-------|---------|-------|
+| TUN 接口创建 | `open("/dev/net/tun")` + `TUNSETIFF` | Wintun IOCTL + 共享内存 | `PF_SYSTEM` socket + `connect` |
+| 用户态读写 | `read()`/`write()` 字符设备 | `WintunReceivePacket`/`WintunSendPacket` | `read()`/`write()` socket |
+| 内核注入点 | `netif_rx_ni` | NDIS LWF `FilterSendNetBufferLists` | `utun_output` → `proto_input` |
+| 路由决策 | FIB 最长前缀匹配 | FIB + InterfaceMetric | 路由表 + `PF_ROUTE` |
+| DNS 拦截点 | 需修改 `/etc/resolv.conf` 或 iptables REDIRECT | WFP ALE 层 callout | `SystemConfiguration` DNS 设置 |
+| 命名空间/隔离 | netns 绑定 | 无原生隔离 | 无原生隔离 |
+| 典型泄露原因 | 直连路由优先于 TUN 默认路由 | 物理网卡 metric 更低 | mDNSResponder 未感知 TUN DNS |
+
+### DNS 查询在路由决策阶段被分流的根因
+
+DNS 查询被分流至物理网卡，本质是路由表存在比 TUN 接口更具体的匹配项。三种典型场景：
+
+1. **直连路由优先**：DNS 服务器与物理网卡同子网，`192.168.1.0/24 dev eth0` 比 `0.0.0.0/1 dev tun0` 更具体。
+2. **策略路由绕过**：Linux 的 `ip rule` 中，`from all lookup main` 优先级高于 `from all lookup 100`（TUN 客户端自定义表），DNS 查询走 main 表。
+3. **应用层绑定**：部分应用（如 `systemd-resolved`）直接绑定物理网卡 IP 发送 DNS 查询，绕过路由表。
+
+抓包验证方法：
+
+```bash
+# Linux: 在物理网卡上抓DNS
+tcpdump -i eth0 -n port 53 -c 10
+# 如果看到查询，说明DNS走了物理网卡
+
+# Windows: 使用pktmon
+pktmon filter add -p 53
+pktmon start --etw -c
+# 分析生成的etl文件
+```
+
+TUN 模式 DNS 泄露的排障，第一步永远是确认 DNS 查询的实际出口接口。后续章节将深入 WFP callout 的注册与优先级、macOS 网络扩展的 DNS 代理机制，以及 Linux nftables 对 DNS 的重定向策略。
+
+## 路由表跃点数与多网卡并发下的 DNS 越轨
+
+TUN 模式启动后，代理进程会在系统路由表中插入一条低 Metric 的默认路由，试图将所有流量导入虚拟网卡。DNS 查询作为 UDP 流量，理应同样被这条路由捕获。实际抓包却经常看到 DNS 请求从物理网卡直接发出——问题出在路由选择阶段，而非 TUN 驱动本身。
+
+### Windows 路由表 Metric 与接口跃点的双重博弈
+
+`route print` 输出中，每条路由包含五个关键字段：网络目标、网络掩码、网关、接口、跃点数。跃点数列显示的是 **路由 Metric 与接口 Metric 的加和**，而非单一值。
+
+```
+IPv4 路由表
+===========================================================================
+活动路由:
+网络目标        网络掩码          网关       接口     跃点数
+0.0.0.0         0.0.0.0      10.0.0.1     192.168.1.100     25
+0.0.0.0         0.0.0.0      10.8.0.1     10.8.0.2          5
+8.8.8.8         255.255.255.255  10.0.0.1  192.168.1.100    25
+```
+
+第二行是 TUN 接口（10.8.0.2）插入的默认路由，跃点数 5；第一行是物理网卡（192.168.1.100）的默认路由，跃点数 25。当查询 8.8.8.8 时，系统匹配到第三行的主机路由，该路由绑定在物理网卡上，Metric 25，优先于 TUN 的默认路由被选中。DNS 查询由此绕过 TUN。
+
+这种现象的根因是代理软件在启动时，通过 `GetBestRoute` 或 `CreateIpForwardEntry` 获取了 DNS 服务器的直连路由，并将其绑定到物理接口。更隐蔽的情况出现在多网卡场景：有线网卡 Metric 10、无线网卡 Metric 35、TUN 接口 Metric 5。TUN 默认路由 Metric 5 最低，看似能捕获所有流量。但若代理进程在配置 TUN 路由时，将 DNS 服务器地址加入了 **旁路列表**，路由表会为 DNS 服务器单独创建一条指向物理网关的主机路由，Metric 值等于物理接口 Metric 加路由 Metric，往往低于 TUN 默认路由的合成 Metric。
+
+PowerShell 下查看接口 Metric：
+
+```powershell
+Get-NetIPInterface -AddressFamily IPv4 | Format-Table InterfaceAlias, InterfaceMetric, ConnectionState
+```
+
+输出示例：
+
+```
+InterfaceAlias       InterfaceMetric ConnectionState
+--------------       --------------- ---------------
+以太网                             10        Connected
+WLAN                               35        Connected
+TUN                                5         Connected
+```
+
+调整 TUN 接口 Metric 使其低于所有物理接口：
+
+```powershell
+Set-NetIPInterface -InterfaceAlias "TUN" -InterfaceMetric 1
+```
+
+调整后，TUN 默认路由的合成 Metric 变为 1（接口 Metric）+ 0（路由 Metric）= 1，低于物理网卡主机路由的 25，DNS 查询重新被 TUN 捕获。但此操作会**覆盖所有物理接口的路由优先级**，可能导致局域网打印机、NAS 等直连设备不可达，需配合 `New-NetRoute` 添加例外路由。
+
+### Linux 策略路由与 DNS 出口选择
+
+Linux 下 `ip route show` 输出默认路由及特定主机路由：
+
+```
+default via 10.8.0.1 dev tun0 metric 50
+default via 192.168.1.1 dev eth0 metric 100
+8.8.8.8 via 192.168.1.1 dev eth0 metric 100
+```
+
+`tun0` 的默认路由 Metric 50，低于 `eth0` 的 100。但 8.8.8.8 的主机路由绑定在 `eth0` 上，Metric 100。内核在路由查找时，主机路由优先于默认路由，无论 Metric 高低。DNS 查询 8.8.8.8 命中主机路由，从 `eth0` 发出。
+
+代理软件通常通过 `ip rule` 添加策略路由规则，将特定 fwmark 的流量导向 TUN 表。若 DNS 查询未被标记，则走主路由表，命中物理网卡主机路由。检查方法：
+
+```bash
+ip rule show
+ip route show table 100
+```
+
+若 `ip rule` 中缺少对 DNS 端口的匹配规则，或代理进程未对 DNS 查询设置 socket mark，DNS 流量将按主路由表转发。
+
+### macOS utun 与 en0 的路由跃点对比
+
+`netstat -rn` 输出：
+
+```
+Destination        Gateway            Flags        Netif Expire
+default            10.8.0.1           UGSc           utun3
+default            192.168.1.1        UGScI          en0
+8.8.8.8            192.168.1.1        UGSc           en0
+```
+
+`utun3` 的默认路由 Flags 为 `UGSc`，`en0` 的默认路由 Flags 为 `UGScI`。`I` 标志表示该路由为 **接口范围路由**，优先级低于非接口范围路由。但 8.8.8.8 的主机路由绑定在 `en0` 上，Flags 为 `UGSc`，与 utun3 默认路由同级。macOS 路由查找顺序为：主机路由 > 网络路由 > 默认路由。8.8.8.8 命中主机路由，从 `en0` 发出。
+
+多网卡场景下，macOS 通过 `scutil` 设置服务顺序，但路由表仍按上述规则查找。TUN 接口的默认路由无法覆盖已存在的物理网卡主机路由。
+
+### 多网卡 Metric 调整前后 DNS 出口对比
+
+| 场景 | 物理网卡 Metric | TUN Metric | DNS 主机路由 | DNS 出口 | 是否泄露 |
+|------|----------------|------------|--------------|----------|----------|
+| 调整前 | 10（有线） | 5 | 绑定物理网卡 | 物理网卡 | 是 |
+| 调整前 | 35（无线） | 5 | 绑定物理网卡 | 物理网卡 | 是 |
+| 调整后 | 10（有线） | 1 | 未绑定 | TUN | 否 |
+| 调整后 | 35（无线） | 1 | 未绑定 | TUN | 否 |
+| 调整后 | 10（有线） | 1 | 绑定物理网卡 | 物理网卡 | 是 |
+
+第四行和第五行的差异在于：即使 TUN Metric 降至 1，若 DNS 服务器存在绑定物理网卡的主机路由，DNS 查询仍从物理网卡发出。必须删除该主机路由，或将其 Metric 调高至 TUN 默认路由之上。
+
+```powershell
+# 删除绑定物理网卡的 DNS 主机路由
+Remove-NetRoute -DestinationPrefix "8.8.8.8/32" -InterfaceAlias "以太网" -Confirm:$false
+
+# 或添加指向 TUN 的 DNS 主机路由
+New-NetRoute -DestinationPrefix "8.8.8.8/32" -InterfaceAlias "TUN" -NextHop 10.8.0.1 -RouteMetric 1
+```
+
+Linux 下对应操作：
+
+```bash
+ip route del 8.8.8.8/32 dev eth0
+ip route add 8.8.8.8/32 dev tun0 metric 1
+```
+
+macOS 下：
+
+```bash
+sudo route delete 8.8.8.8
+sudo route add 8.8.8.8 -interface utun3
+```
+
+多网卡并发时，还需注意 **DNS 查询的源地址选择**。即使路由指向 TUN，若 socket 绑定的是物理网卡 IP，内核仍可能根据源地址反向查找路由表，选择物理网卡出口。代理进程需在创建 DNS socket 时显式绑定 TUN 接口地址，或使用 `IP_BOUND_IF`（macOS）/ `SO_BINDTODEVICE`（Linux）/ `IP_UNICAST_IF`（Windows）强制出口接口。
+
+## WFP 驱动层过滤与 DNS 泄露的防火墙固化规则
+
+### WFP 分层架构与 DNS 流量的拦截点
+
+Windows Filtering Platform 不是一张扁平的规则表，而是一棵按优先级从高到低排列的过滤器分层树。每个过滤器挂在特定的 **Layer** 上，Layer 决定了该过滤器能看到数据包的哪个阶段。与 DNS 泄露直接相关的 Layer 有四个：
+
+```
+┌─────────────────────────────────────────────────────┐
+│  FWPM_LAYER_ALE_AUTH_CONNECT_V4 / V6               │  ← 出站连接建立时
+│  (Connect Redirect / Proxy Binding)                │
+├─────────────────────────────────────────────────────┤
+│  FWPM_LAYER_ALE_FLOW_ESTABLISHED_V4 / V6           │  ← 流已建立
+│  (Stream Inspection / Callout)                     │
+├─────────────────────────────────────────────────────┤
+│  FWPM_LAYER_DATAGRAM_DATA_V4 / V6                  │  ← UDP 数据报收发
+│  (UDP 53 在此层被拦截或放行)                         │
+├─────────────────────────────────────────────────────┤
+│  FWPM_LAYER_OUTBOUND_TRANSPORT_V4 / V6             │  ← 传输层出站
+│  (最后一道可编程关口)                                │
+└─────────────────────────────────────────────────────┘
+```
+
+代理客户端（Clash、Sing-box、V2Ray 等）通常在 `ALE_AUTH_CONNECT` 层注入 Callout 驱动，将匹配的流量重定向到 TUN 虚拟网卡。但问题在于：WFP 的 Filter Arbitration 遵循权重（Weight）和子层（SubLayer）优先级，而非简单的“后加载覆盖先加载” 。系统自带防火墙（MpsSvc / Windows Defender Firewall）注册在 `FWPM_SUBLAYER_MPSSVC_...` 子层，权重值通常为 `0x7000` 级别；第三方代理驱动的子层权重如果低于此值，其 Block 或 Redirect 规则会被系统规则抢先匹配。
+
+### netsh wfp show state 关键字段解读
+
+执行以下命令导出当前 WFP 状态：
+
+```powershell
+netsh wfp show state file=C:\wfp_dump.xml
+```
+
+在生成的 XML 中，定位 `<filters>` 节点，重点检查以下字段：
+
+```xml
+<item>
+  <filterKey>{GUID}</filterKey>
+  <displayData>
+    <name>Block DNS to Physical NIC</name>
+    <description>Custom rule from proxy client</description>
+  </displayData>
+  <layerKey>FWPM_LAYER_ALE_AUTH_CONNECT_V4</layerKey>
+  <subLayerKey>{SUBLAYER_GUID}</subLayerKey>
+  <weight>
+    <uint64>0x0000000000000F00</uint64>   <!-- 权重 0x0F00 -->
+  </weight>
+  <action>
+    <type>FWP_ACTION_BLOCK</type>
+  </action>
+  <filterCondition>
+    <fieldKey>FWPM_CONDITION_IP_REMOTE_PORT</fieldKey>
+    <matchType>FWP_MATCH_EQUAL</matchType>
+    <conditionValue><uint16>53</uint16></conditionValue>
+  </filterCondition>
+</item>
+```
+
+关键判断逻辑：
+
+- **weight 值**：若代理驱动的 Block 规则权重为 `0x0F00`，而 MpsSvc 的 Allow 规则权重为 `0x7000`，则系统规则优先匹配，DNS 查询被放行到物理网卡。
+- **subLayerKey**：确认代理驱动是否注册了独立子层。若与 MpsSvc 共用子层，仲裁结果取决于权重排序。
+- **layerKey**：确认规则挂载的层。仅挂在 `OUTBOUND_TRANSPORT` 层的规则无法拦截已由 `ALE_AUTH_CONNECT` 层放行的连接。
+
+### 为何 TUN 模式仍无法拦截部分系统 DNS
+
+Windows 上有三类 DNS 查询路径可以绕过 WFP 用户态过滤：
+
+**第一类：Svchost 内的 Dnscache 服务**。 `Dnscache` 运行在 `svchost.exe -k NetworkService` 中，其 DNS 查询通过 `Nsi` （Network Store Interface） 直接下发到内核的 `nsiproxy.sys`，绕过 Winsock 的 `connect()` 调用路径。WFP 的 `ALE_AUTH_CONNECT` 层对此类查询不可见——它们不经过 ALE 连接建立流程，直接在 `DATAGRAM_DATA` 层发出 UDP 包。
+
+**第二类：SMB / NetBIOS 名称解析**。 当应用程序调用 `GetAddrInfo()` 且 DNS 查询失败时，系统会回退到 LLMNR （Link-Local Multicast Name Resolution， 224.0.0.252:5355） 或 NBNS （NetBIOS Name Service， 广播 UDP 137）。这些流量走的是多播/广播路径，不经过 TUN 路由表的默认网关匹配。
+
+**第三类：WPAD / 代理自动发现**。 WinHTTP 服务在启动时可能发起 WPAD 查询（`wpad.local` 或 `wpad.<domain>`），该查询由 `WinHttpAutoProxySvc` 发起，使用的网络接口取决于服务启动时的绑定顺序，可能早于 TUN 网卡就绪。
+
+### PowerShell 固化 WFP 规则
+
+以下命令块创建一条高权重 Block 规则，阻止所有非 TUN 接口的 UDP 53 出站：
+
+```powershell
+# 获取 TUN 接口的 LUID（Locally Unique Identifier）
+$tunIf = Get-NetAdapter | Where-Object { $_.InterfaceDescription -match "TAP|TUN|WireGuard|wintun" }
+$tunLuid = $tunIf.ifIndex
+
+# 创建自定义子层，权重设为最高
+New-NetFirewallRule `
+  -DisplayName "Block DNS Non-TUN" `
+  -Direction Outbound `
+  -Protocol UDP `
+  -RemotePort 53 `
+  -InterfaceAlias $tunIf.Name `
+  -Action Allow `
+  -PolicyStore ActiveStore
+
+# 配套 Block 规则：所有其他接口的 53 端口
+New-NetFirewallRule `
+  -DisplayName "Block DNS All Other" `
+  -Direction Outbound `
+  -Protocol UDP `
+  -RemotePort 53 `
+  -InterfaceAlias (Get-NetAdapter | Where-Object { $_.ifIndex -ne $tunLuid }).Name `
+  -Action Block `
+  -PolicyStore ActiveStore
+```
+
+注意 `-PolicyStore ActiveStore` 仅对当前会话生效。需要持久化时改用 `PersistentStore`，但需管理员权限且规则在重启后依然存在。更底层的做法是通过 `FwpmFilterAdd0()` API 直接注入过滤器，指定 `weight = 0xFFFF` 和独立子层，确保仲裁优先级高于 MpsSvc。
+
+### Linux nftables 等效规则
+
+```nft
+table inet dns_guard {
+    chain output {
+        type filter hook output priority 0; policy accept;
+
+        # 允许 TUN 接口的 DNS
+        oifname "tun0" udp dport 53 accept
+        oifname "tun0" tcp dport 53 accept
+
+        # 阻断所有其他接口的 DNS
+        udp dport 53 drop
+        tcp dport 53 drop
+    }
+}
+```
+
+对于使用 `nft` 的现代发行版，还需处理 `systemd-resolved` 的 stub listener。`systemd-resolved` 监听 `127.0.0.53:53`，其上游查询由 `resolved` 进程发出，`oifname` 为物理网卡。需额外规则：
+
+```nft
+# 允许 resolved 通过 TUN 查询上游
+meta skuid systemd-resolve oifname "tun0" udp dport 53 accept
+meta skuid systemd-resolve udp dport 53 drop
+```
+
+### macOS pf.conf 规则片段
+
+```
+# 定义 TUN 接口
+tun_if = "utun0"
+
+# 允许 TUN 接口的 DNS
+pass out quick on $tun_if proto udp to any port 53
+pass out quick on $tun_if proto tcp to any port 53
+
+# 阻断所有其他接口的 DNS
+block drop out quick proto udp from any to any port 53
+block drop out quick proto tcp from any to any port 53
+```
+
+macOS 上需注意 `mDNSResponder` 的查询路径。`mDNSResponder` 在 Big Sur 之后通过 `NEDNSProxyProvider` 框架工作，pf 规则对其发出的查询同样有效，但需确保 `pf` 在 TUN 接口创建之后加载规则。使用 `pfctl -f /etc/pf.conf` 重载时，若 `utun0` 尚未创建，规则会因接口不存在而报错。解决方法是使用 `pfctl -f` 前先确认 TUN 已 up。
+
+### 三平台防火墙规则对比
+
+| 维度 | Windows WFP | Linux nftables | macOS pf |
+|------|-------------|----------------|----------|
+| 拦截层 | ALE_AUTH_CONNECT / DATAGRAM_DATA | output hook | out quick |
+| 优先级机制 | Weight + SubLayer 仲裁 | chain priority 数值 | quick 关键字短路 |
+| 接口匹配字段 | InterfaceAlias / LUID | oifname | on $tun_if |
+| 用户态服务绕过 | Dnscache 走 NSI 可绕过 | systemd-resolved 需 skuid 匹配 | mDNSResponder 走 NEDNSProxy |
+| 持久化方式 | PersistentStore / GPO | nft -f + systemd unit | pfctl -f + launchd |
+| 调试工具 | netsh wfp show state | nft monitor trace | pfctl -s rules -vv |
+
+三平台的核心差异在于：WFP 的仲裁是**权重驱动的多子层竞争**，nftables 是**优先级数值决定的单链顺序**，pf 是**quick 关键字触发的短路匹配**。理解这一差异，才能在 TUN 模式下精准固化 DNS 出口规则，堵住系统服务从物理网卡泄露查询的通道。若你正在排查代理工具连接异常，可参考 [tools/telegram-not-connecting](/tools/telegram-not-connecting/) 中的 DNS 诊断流程；若问题表现为节点延迟异常，[airport/high-latency](/airport/high-latency/) 提供了从 DNS 解析到 TCP 握手的逐段排查方法。
+
+## Fake-IP 与 Redir-Host 的解析流程与抓包特征
+
+### Fake-IP 模式解析全流程
+
+Fake-IP 的核心机制：代理内核在 TUN 接口上劫持所有 DNS 查询，立即返回一个从保留地址池中分配的虚假 IP（通常为 `198.18.0.0/15` 或 `fc00::/18`），同时将该假 IP 与真实域名的映射关系写入内存中的映射表。应用程序拿到假 IP 后发起 TCP/UDP 连接，流量进入 TUN 接口，代理内核通过映射表反查域名，将真实域名通过代理隧道发往远端节点完成解析和连接。
+
+时序如下：
+
+```
+App                TUN iface           Proxy Core           Remote Node
+ |                    |                    |                     |
+ |--DNS query------->|                    |                     |
+ |  (example.com A)   |---hijack---------->|                     |
+ |                    |                    |--alloc fake IP----->|
+ |                    |<--198.18.0.5------|                     |
+ |<--198.18.0.5------|                    |                     |
+ |                    |                    |                     |
+ |--TCP connect----->|                    |                     |
+ |  dst=198.18.0.5   |---route to TUN---->|                     |
+ |                    |                    |--map fake->domain  |
+ |                    |                    |--proxy tunnel----->|
+ |                    |                    |  (example.com:443)  |
+ |                    |                    |<--remote resolve----|
+ |                    |<--data relay-------|<--data relay--------|
+```
+
+关键特征：本地协议栈从未向物理网卡发出过明文 DNS 查询。Wireshark 在物理网卡上抓包，只能看到代理客户端与远端节点之间的加密隧道流量（通常是 TCP/443 或 QUIC），DNS 报文完全不可见。在 TUN 接口上抓包，可以看到应用发出的 DNS query，但 response 来源是 TUN 接口自身的 IP，TTL 通常极短（部分实现设为 1 或 0）。
+
+### Redir-Host 模式解析全流程
+
+Redir-Host 模式下，代理内核不劫持 DNS。应用程序的 DNS 查询走系统解析器，系统解析器根据 `/etc/resolv.conf`（Linux/macOS）或网络适配器配置（Windows）选择 DNS 服务器。如果 DNS 服务器地址指向了 TUN 接口的网关地址，且代理内核在 TUN 上监听了 DNS 端口，则查询会被代理内核捕获并转发至远端；如果 DNS 服务器地址仍然是物理网卡的 DNS（如 `8.8.8.8`、`223.5.5.5`），则查询直接从物理网卡出站，产生明文 DNS 泄露。
+
+时序如下：
+
+```
+App                System Resolver      Physical NIC         DNS Server
+ |                    |                    |                     |
+ |--getaddrinfo----->|                    |                     |
+ |                    |--UDP:53----------->|                     |
+ |                    |  dst=8.8.8.8      |--DNS query--------->|
+ |                    |                    |<--DNS response------|
+ |<--real IP----------|<--real IP----------|                     |
+ |                    |                    |                     |
+ |--TCP connect----->|                    |                     |
+ |  dst=real IP       |---route table----->|                     |
+ |                    |  (TUN or physical) |                     |
+```
+
+如果路由表已将默认路由指向 TUN 接口，TCP 连接会进入 TUN，代理内核通过目标 IP 反查域名（需要维护 IP→域名的反向映射，通常来自 DNS 响应嗅探或 sniffer 模块）。但如果 DNS 查询本身已经从物理网卡泄露，那么即使后续 TCP 流量走了代理，DNS 查询的明文内容已经暴露。
+
+### Wireshark 抓包过滤与报文差异
+
+在物理网卡上执行以下过滤表达式，可快速定位是否存在 DNS 泄露：
+
+```
+dns && ip.src != 192.168.1.100 && ip.dst != 192.168.1.100
+```
+
+其中 `192.168.1.100` 替换为 TUN 接口的 IP 地址。该表达式排除 TUN 接口自身产生的 DNS 流量，只显示从物理网卡出站的 DNS 报文。更精确的写法：
+
+```
+dns && !(ip.addr == 198.18.0.0/15) && !(ip.addr == 10.0.0.0/8)
+```
+
+Fake-IP 模式下，物理网卡上此过滤器返回空结果。Redir-Host 模式下，会看到完整的 DNS query/response 对，且 response 中的 A 记录为真实 IP。
+
+两种模式的 DNS 报文特征对比：
+
+| 特征维度 | Fake-IP | Redir-Host（未正确配置） |
+|---------|---------|----------------------|
+| 物理网卡 DNS 报文 | 无 | 有，UDP:53 明文 |
+| DNS response 来源 IP | TUN 接口 IP | 物理 DNS 服务器 IP |
+| DNS response A 记录 | 198.18.x.x（假 IP） | 真实公网 IP |
+| TTL 值 | 1 或 0 | 正常值（如 300、600） |
+| TCP 连接目标 | 假 IP → TUN 映射 | 真实 IP → 路由决策 |
+| 代理内核映射方向 | fake IP → domain | IP → domain（需 sniffer） |
+| 泄露风险 | 无明文 DNS 出站 | DNS query 明文暴露 |
+| 对 CDN 友好度 | 远端解析，最优节点 | 本地解析，可能拿到非最优 CDN |
+
+### sing-box 与 Clash 配置对比
+
+sing-box 的 Fake-IP 配置片段：
+
+```json
+{
+  "dns": {
+    "servers": [
+      {
+        "tag": "fakeip",
+        "address": "fakeip"
+      }
+    ],
+    "fakeip": {
+      "enabled": true,
+      "inet4_range": "198.18.0.0/15",
+      "inet6_range": "fc00::/18"
+    }
+  },
+  "inbounds": [
+    {
+      "type": "tun",
+      "inet4_address": "172.19.0.1/30",
+      "auto_route": true,
+      "sniff": true
+    }
+  ]
+}
+```
+
+Clash Meta 的对应配置：
+
+```yaml
+dns:
+  enable: true
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - "*.lan"
+    - "*.local"
+    - "stun.*.*"
+  nameserver:
+    - https://dns.google/dns-query
+  fallback:
+    - tls://1.1.1.1:853
+
+tun:
+  enable: true
+  stack: system
+  auto-route: true
+  auto-detect-interface: true
+```
+
+Redir-Host 模式在 Clash 中对应 `enhanced-mode: redir-host`，此时 `fake-ip-range` 不生效，代理内核依赖 sniffer 模块从 TLS ClientHello 的 SNI 或 HTTP Host 头中提取域名。若目标流量为非 TLS/HTTP 协议（如自定义 TCP 协议、部分游戏流量），sniffer 无法提取域名，代理内核只能基于目标 IP 进行路由决策，可能导致直连或代理判断错误。这也是 Redir-Host 模式在复杂网络环境下更容易出现连接异常的原因之一，类似 [tools/telegram-not-connecting](/tools/telegram-not-connecting/) 中描述的 Telegram MTProto 连接问题，部分场景下就与 sniffer 无法正确识别流量特征有关。
+
+### 工程实践中的决策依据
+
+选择 Fake-IP 还是 Redir-Host，取决于以下条件：
+
+- 需要避免 DNS 泄露且不介意部分应用兼容性问题（如某些应用对 198.18.x.x 地址有硬编码检查）→ Fake-IP
+- 需要最大兼容性且能确保 DNS 查询被 TUN 接口捕获 → Redir-Host + DNS 劫持规则
+- 需要远端解析以获得最优 CDN 节点 → Fake-IP
+- 需要本地解析以支持内网域名或 mDNS → Redir-Host + fake-ip-filter
+
+Fake-IP 模式下，如果 `fake-ip-filter` 未正确配置，内网域名（如 `*.company.local`）也会被分配假 IP，导致内网服务不可达。Redir-Host 模式下，如果路由表的 Metric 值未正确设置（参见第 2 节），DNS 查询可能从物理网卡出站，直接导致泄露。两种模式各有取舍，但就 DNS 泄露防护而言，Fake-IP 在架构层面天然免疫明文 DNS 出站问题，前提是 TUN 接口的 DNS 劫持规则正确生效。
+
+## Wireshark 验证 DNS 泄露的保姆级步骤
+
+前四节从内核协议栈、路由度量、WFP 过滤规则到 Fake-IP 解析流程，逐层拆解了 TUN 模式下 DNS 泄露的成因链条。理论推演再严密，最终必须落到抓包证据上。本节给出从零开始的完整验证流程，覆盖 Windows、macOS、Linux 三平台，目标是让你在 15 分钟内拿到确凿的泄露证据链。
+
+### 捕获接口的选择策略
+
+Wireshark 的接口列表是排障的第一道分水岭。打开 Capture → Options，你会看到一长串接口。关键原则：**同时在物理网卡和 TUN 接口上抓包**，两个会话并行运行。
+
+以 Windows 为例，接口列表通常包含：
+
+```
+以太网 (Npcap 1.78)
+WLAN (Npcap 1.78)
+本地连接* 10 (Npcap 1.78)          ← 可能是 TUN 虚拟网卡
+Adapter for loopback traffic capture ← Npcap Loopback Adapter
+```
+
+TUN 接口在 Windows 上通常显示为代理客户端创建的虚拟适配器名称（如 “Mihomo Tunnel”、“WireGuard Tunnel”、“wintun”），带有 Npcap 标注。物理网卡则是你实际联网的以太网或 WLAN 适配器。
+
+macOS 下，TUN 接口名为 `utun0`、`utun1` 等，物理网卡为 `en0`（Wi-Fi）或 `en1`（有线）。`ifconfig` 输出中 utun 接口的 `flags` 包含 `UP,POINTOPOINT,RUNNING`，且没有 `inet` 地址（或仅有链路本地地址），这是识别依据。
+
+Linux 下，TUN 接口通常命名为 `tun0`、`utun` 或代理客户端自定义名称，用 `ip link show type tun` 快速列出。
+
+选择接口后，务必勾选 **Enable promiscuous mode**（混杂模式）。TUN 接口上的流量本身就是点对点的，混杂模式不会引入额外噪声，但物理网卡上混杂模式能确保捕获到所有经过该网卡的 DNS 报文——包括那些源 IP 不是本机网卡地址的异常包。
+
+### Npcap 环回捕获与权限配置
+
+Windows 平台必须安装 Npcap 驱动（Wireshark 安装包内置，但需勾选 “Install Npcap in WinPcap API-compatible Mode”）。环回流量捕获依赖 Npcap 的 Loopback Adapter，若安装时未勾选，`Adapter for loopback traffic capture` 不会出现在接口列表中。
+
+验证 Npcap 是否正常工作：
+
+```powershell
+# 管理员权限运行
+Get-Service npcap | Select-Object Status, StartType
+# 应输出 Running / Automatic
+```
+
+若代理客户端使用 WFP 驱动在环回路径上重定向 DNS，普通物理网卡抓包会漏掉这些报文。必须同时抓取 Npcap Loopback Adapter，才能看到 `127.0.0.1:53` 或 `[::1]:53` 上的 DNS 查询。
+
+macOS 下 Wireshark 需要 root 权限访问 BPF 设备：
+
+```bash
+# 授予 dumpcap 权限（推荐，避免每次 sudo）
+sudo chown root:admin /dev/bpf*
+sudo chmod o+r /dev/bpf*
+
+# 或者直接用 sudo 启动
+sudo /Applications/Wireshark.app/Contents/MacOS/Wireshark
+```
+
+macOS 的 utun 接口在 Wireshark 中显示为 `utun0`、`utun1` 等，选择时注意区分代理隧道接口和系统 VPN 接口。用 `ifconfig utun0` 确认接口对应的 MTU 和状态。
+
+Linux 下推荐 tcpdump 做初步捕获，Wireshark 做深度分析：
+
+```bash
+# 同时抓取物理网卡和 TUN 接口
+sudo tcpdump -i eth0 -w /tmp/phys.pcap port 53 &
+sudo tcpdump -i tun0 -w /tmp/tun.pcap port 53 &
+
+# 或者用 any 接口一把梭（注意：any 接口在部分内核上捕获不到 TUN 出站流量）
+sudo tcpdump -i any -w /tmp/all.pcap 'udp port 53 or tcp port 53'
+```
+
+`any` 伪接口在 Linux 上通过 AF_PACKET 抓包，能覆盖大多数场景，但在某些内核版本中 TUN 设备的出站包可能被跳过。稳妥做法是分别指定物理网卡和 TUN 接口。
+
+### 显示过滤器表达式
+
+原始抓包文件可能包含大量噪声。以下过滤器按排查阶段递进使用：
+
+```
+# 第一阶段：所有 DNS 流量
+dns
+
+# 第二阶段：排除发往 TUN 接口网关（通常是 198.18.0.1 或 10.0.0.1）的 DNS
+dns and ip.dst != 198.18.0.1 and ip.dst != 10.0.0.1
+
+# 第三阶段：只看发往公共 DNS 的明文查询（泄露嫌疑）
+dns and ip.dst == 8.8.8.8 or ip.dst == 8.8.4.4 or ip.dst == 1.1.1.1 or ip.dst == 223.5.5.5
+
+# 第四阶段：排除代理隧道常用的加密端口流量
+not tcp.port == 443 and not tcp.port == 8443 and not tcp.port == 2053
+
+# 第五阶段：定位特定域名的查询
+dns.qry.name contains "example.com"
+
+# 第六阶段：只看查询报文（排除响应）
+dns.flags.response == 0
+
+# 第七阶段：只看响应报文
+dns.flags.response == 1
+```
+
+组合使用示例——查找所有未经 TUN 接口、发往公网 DNS 的明文查询：
+
+```
+dns and dns.flags.response == 0 and ip.dst != 198.18.0.1 and ip.dst != 10.0.0.1 and udp.port == 53
+```
+
+### DNS 查询报文详情字段拆解
+
+在 Wireshark 的 Packet Details 面板中，展开 Domain Name System (query) 节点，你会看到以下关键字段：
+
+```
+Transaction ID: 0x8a3f
+Flags: 0x0100 Standard query
+    0... .... .... .... = Response: Message is a query
+    .000 0... .... .... = Opcode: Standard query (0)
+    .... ..0. .... .... = Truncated: Message is not truncated
+    .... ...1 .... .... = Recursion desired: Do query recursively
+    .... .... .0.. .... = Z: Reserved (0)
+    .... .... ..0. .... = Non-authenticated data: Unacceptable
+Questions: 1
+Answer RRs: 0
+Authority RRs: 0
+Additional RRs: 0
+Queries
+    example.com: type A, class IN
+        Name: example.com
+        [Name Length: 11]
+        [Label Count: 2]
+        Type: A (Host Address) (1)
+        Class: IN (0x0001)
+```
+
+**Transaction ID** 是匹配查询与响应的关键。如果同一 Transaction ID 的查询出现在物理网卡上，而响应来自非 TUN 网关的 IP，泄露即成立。
+
+**Flags** 字段中 `Recursion desired` 位为 1 表示客户端期望递归解析。若该位为 0 但仍有响应返回，说明中间有 DNS 缓存或转发器介入，需进一步追踪。
+
+**Queries** 部分的 `Name` 字段是泄露判定的核心证据。若该域名出现在物理网卡的明文 DNS 查询中，且代理配置为 Fake-IP 模式（该模式应在 TUN 接口返回虚假 IP，真实域名经代理隧道传输），则确认泄露。
+
+### 泄露判定流程图
+
+```
+[开始抓包]
+    │
+    ▼
+[物理网卡 + TUN 接口同时捕获]
+    │
+    ▼
+[过滤 dns 流量]
+    │
+    ├── TUN 接口上有 DNS 查询？
+    │       │
+    │       ├── 是 → 检查查询目标 IP
+    │       │       ├── 目标为 Fake-IP 段 (198.18.0.0/16) → 正常，代理内核处理
+    │       │       └── 目标为公网 DNS → 异常，TUN 接口不应直接发出公网 DNS
+    │       │
+    │       └── 否 → 继续检查物理网卡
+    │
+    ▼
+[物理网卡上有 DNS 查询？]
+    │
+    ├── 是 → 检查源 IP 和目的 IP
+    │       │
+    │       ├── 源 IP 为物理网卡地址，目的 IP 为公网 DNS
+    │       │       │
+    │       │       ├── 域名与代理规则匹配 → DNS 泄露确认
+    │       │       └── 域名与代理规则不匹配 → 可能是直连域名，正常
+    │       │
+    │       └── 源 IP 为 TUN 接口地址，目的 IP 为公网 DNS
+    │               │
+    │               └── 路由表配置错误导致 TUN 流量绕行物理网卡 → 泄露确认
+    │
+    └── 否 → 无泄露（或泄露流量被加密，需检查 DoH/DoT）
+```
+
+### tcpdump 命令块
+
+Linux 和 macOS 下用 tcpdump 做快速验证：
+
+```bash
+# 捕获物理网卡上的 DNS 查询，排除本地回环
+sudo tcpdump -i eth0 -n -v 'udp port 53 and src net not 127.0.0.0/8' -c 100
+
+# 捕获 TUN 接口上的 DNS 流量
+sudo tcpdump -i tun0 -n -v 'udp port 53' -c 100
+
+# 同时输出时间戳和完整 DNS 报文
+sudo tcpdump -i eth0 -n -vvv -l 'udp port 53' | tee /tmp/dns_leak.log
+
+# 过滤特定域名（tcpdump 不支持字符串匹配，需结合 grep）
+sudo tcpdump -i eth0 -n -A 'udp port 53' | grep -i "example.com"
+
+# 捕获 TCP DNS（DoT 通常走 853 端口）
+sudo tcpdump -i eth0 -n 'tcp port 853'
+
+# 捕获 DoH（HTTPS 上的 DNS，通常走 443）
+sudo tcpdump -i eth0 -n 'tcp port 443 and host dns.google'
+```
+
+macOS 下 tcpdump 的 BPF 设备需要 root 权限，且 utun 接口名需通过 `ifconfig -l` 确认：
+
+```bash
+# 列出所有 utun 接口
+ifconfig -l | tr ' ' '\n' | grep utun
+
+# 对 utun0 抓包
+sudo tcpdump -i utun0 -n -v 'udp port 53'
+```
+
+### Python 自动化检测脚本思路
+
+手动抓包适合单次排障，持续监控需要自动化。以下伪代码展示核心逻辑：
+
+```python
+#!/usr/bin/env python3
+"""
+TUN 模式 DNS 泄露自动化检测
+依赖: scapy, psutil
+"""
+from scapy.all import sniff, DNS, DNSQR, IP, UDP
+import psutil
+import threading
+import time
+
+# 配置
+TUN_INTERFACE = "tun0"          # 根据平台调整
+PHYS_INTERFACE = "eth0"         # 根据平台调整
+FAKE_IP_RANGE = "198.18.0.0/16"
+PUBLIC_DNS = ["8.8.8.8", "8.8.4.4", "1.1.1.1", "223.5.5.5"]
+ALERT_THRESHOLD = 5             # 5 秒内超过 5 次泄露查询触发告警
+
+leak_counter = 0
+lock = threading.Lock()
+
+def is_fake_ip(ip_str):
+    """判断 IP 是否属于 Fake-IP 段"""
+    from ipaddress import ip_address, ip_network
+    return ip_address(ip_str) in ip_network(FAKE_IP_RANGE)
+
+def analyze_packet(pkt, interface):
+    """分析单个 DNS 报文"""
+    global leak_counter
+
+    if not pkt.haslayer(DNS):
+        return
+
+    dns = pkt[DNS]
+    if dns.qr != 0:  # 只看查询
+        return
+
+    if not pkt.haslayer(IP):
+        return
+
+    src_ip = pkt[IP].src
+    dst_ip = pkt[IP].dst
+    query_name = dns.qd.qname.decode('utf-8', errors='ignore')
+
+    # 判定逻辑
+    if interface == PHYS_INTERFACE:
+        if dst_ip in PUBLIC_DNS:
+            with lock:
+                leak_counter += 1
+            print(f"[泄露告警] 物理网卡明文 DNS 查询: "
+                  f"{query_name} → {dst_ip} (源: {src_ip})")
+
+    elif interface == TUN_INTERFACE:
+        if not is_fake_ip(dst_ip) and dst_ip not in PUBLIC_DNS:
+            print(f"[异常] TUN 接口非 Fake-IP 查询: "
+                  f"{query_name} → {dst_ip}")
+        elif dst_ip in PUBLIC_DNS:
+            print(f"[严重泄露] TUN 接口直接发出公网 DNS: "
+                  f"{query_name} → {dst_ip}")
+
+def start_sniff(interface):
+    """启动指定接口的抓包线程"""
+    sniff(
+        iface=interface,
+        filter="udp port 53",
+        prn=lambda pkt: analyze_packet(pkt, interface),
+        store=0
+    )
+
+def monitor_leak_rate():
+    """监控泄露频率"""
+    global leak_counter
+    while True:
+        time.sleep(5)
+        with lock:
+            if leak_counter >= ALERT_THRESHOLD:
+                print(f"[!] 5 秒内检测到 {leak_counter} 次 DNS 泄露，"
+                      f"代理可能未正确接管 DNS")
+            leak_counter = 0
+
+if __name__ == "__main__":
+    # 验证接口存在
+    interfaces = [i.name for i in psutil.net_if_addrs().values()]
+    # 注意：psutil 的接口名与 scapy 可能不一致，需用 ifconfig/ip link 确认
+
+    # 启动双接口抓包线程
+    t1 = threading.Thread(target=start_sniff, args=(PHYS_INTERFACE,))
+    t2 = threading.Thread(target=start_sniff, args=(TUN_INTERFACE,))
+    t3 = threading.Thread(target=monitor_leak_rate, daemon=True)
+
+    t1.start()
+    t2.start()
+    t3.start()
+
+    t1.join()
+    t2.join()
+```
+
+脚本的核心判定逻辑有三条：
+
+1. 物理网卡上出现目的地址为公网 DNS 的明文查询 → 泄露
+2. TUN 接口上出现目的地址为公网 DNS 的查询 → 路由配置错误导致的泄露
+3. TUN 接口上出现非 Fake-IP 段且非公网 DNS 的查询 → 可能是内部 DNS 转发，需结合网络拓扑判断
+
+实际部署时，建议将告警输出接入 syslog 或 Telegram Bot，配合 [tools/telegram-not-connecting](/tools/telegram-not-connecting/) 中提到的连通性排查思路，快速定位是 DNS 泄露导致的连接异常还是节点本身故障。若泄露查询的目标域名集中在少数几个，且这些域名在 [free-nodes/why-free-nodes-fail](/free-nodes/why-free-nodes-fail/) 讨论的免费节点场景中常见，则很可能是代理规则未覆盖这些域名。对于延迟敏感的场景，[airport/high-latency](/airport/high-latency/) 中提到的 DNS 解析路径优化同样适用于泄露修复后的性能调优。
+
+抓包验证的终点不是“看到泄露”，而是拿到完整的证据链：查询报文的时间戳、源 IP、目的 IP、Transaction ID、域名，以及对应的响应报文。将物理网卡和 TUN 接口的 pcap 文件合并分析，用 `frame.time_relative` 对齐时间轴，才能精确定位泄露发生在哪个环节——是应用层未走代理、路由表将 DNS 流量导向了物理网卡，还是 WFP 过滤器放行了本应拦截的查询。
+
+## sing-box 与 Clash Verge 的防火墙固化与防泄露配置
+
+前五节我们从内核协议栈、路由 Metric、WFP 过滤器优先级、Fake-IP 解析链路到 Wireshark 抓包验证，逐步定位了 TUN 模式下 DNS 泄露的根因。本节给出工程上可直接落地的完整配置模板，覆盖 sing-box 与 Clash Verge 两个主流内核，并补充三平台防火墙规则的持久化方案，确保重启后规则不丢失。
+
+### sing-box 完整配置模板
+
+sing-box 的防泄露核心在于 `tun` 入站、`dns` 出站与 `route` 规则三者联动。以下配置以 sing-box 1.10+ 的 `route` 语法为准，确保所有 DNS 查询经 TUN 接口进入后强制走代理出站，本地不做任何明文解析。
+
+```json
+{
+  "log": {
+    "level": "warn",
+    "timestamp": true
+  },
+  "dns": {
+    "servers": [
+      {
+        "tag": "proxy-dns",
+        "address": "https://1.1.1.1/dns-query",
+        "detour": "proxy"
+      },
+      {
+        "tag": "block",
+        "address": "rcode://success"
+      }
+    ],
+    "rules": [
+      {
+        "outbound": "any",
+        "server": "proxy-dns"
+      }
+    ],
+    "strategy": "ipv4_only",
+    "disable_cache": false,
+    "independent_cache": true
+  },
+  "inbounds": [
+    {
+      "type": "tun",
+      "tag": "tun-in",
+      "interface_name": "singtun0",
+      "address": ["172.19.0.1/30", "fd00::1/126"],
+      "mtu": 9000,
+      "auto_route": true,
+      "strict_route": true,
+      "stack": "system",
+      "sniff": true,
+      "sniff_override_destination": false,
+      "domain_strategy": "ipv4_only"
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "shadowsocks",
+      "tag": "proxy",
+      "server": "your-server-ip",
+      "server_port": 8388,
+      "method": "2022-blake3-aes-128-gcm",
+      "password": "your-password",
+      "domain_strategy": "ipv4_only"
+    },
+    {
+      "type": "direct",
+      "tag": "direct"
+    }
+  ],
+  "route": {
+    "rules": [
+      {
+        "protocol": "dns",
+        "outbound": "proxy"
+      },
+      {
+        "ip_is_private": true,
+        "outbound": "direct"
+      }
+    ],
+    "auto_detect_interface": true,
+    "final": "proxy",
+    "default_domain_resolver": {
+      "server": "proxy-dns"
+    }
+  }
+}
+```
+
+关键参数逐项拆解：
+
+- `strict_route: true` 在 Linux 下写入 `ip rule` 与 `ip route` 的优先级规则，阻止物理网卡的默认路由抢占 DNS 出口。Windows 下该选项通过 WFP 过滤器实现等效约束。
+- `route.rules` 中第一条 `protocol: dns` 匹配所有进入 TUN 的 DNS 协议流量，强制指定 `proxy` 出站。若省略此条，sing-box 会按 `final` 出站处理，但 `final` 可能被其他规则覆盖，显式声明更安全。
+- `default_domain_resolver` 指定当出站需要解析服务器域名时使用的 DNS 服务器，此处指向 `proxy-dns`，避免出站握手阶段产生本地 DNS 查询。
+- `dns.strategy: ipv4_only` 与 `domain_strategy: ipv4_only` 配合，防止 AAAA 查询在某些网络环境下绕过代理。
+- `independent_cache: true` 使 DNS 缓存独立于连接跟踪，避免 Fake-IP 映射表在缓存过期后被误清除。
+
+验证配置生效：启动 sing-box 后执行 `dig @172.19.0.1 example.com`，若返回的 DNS 响应 TTL 与远端 DNS 一致且本地物理网卡无 53 端口流量，则 DNS 已完全走代理。若出现解析失败，检查 `route.rules` 中 `protocol: dns` 是否被后续规则覆盖。
+
+### Clash Verge TUN 与 DNS 配置片段
+
+Clash Verge 基于 Clash Meta（mihomo）内核，TUN 栈选择直接影响 DNS 泄露风险。`gVisor` 栈在用户态实现网络协议栈，对 DNS 流量的拦截更彻底，但吞吐量低于 `system` 栈。`system` 栈依赖操作系统路由表，需配合 `strict-route` 和 DNS 增强模式。
+
+```yaml
+tun:
+  enable: true
+  stack: gvisor
+  device: clash-tun
+  auto-route: true
+  auto-detect-interface: true
+  strict-route: true
+  dns-hijack:
+    - any:53
+    - tcp://any:53
+  mtu: 9000
+
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  ipv6: false
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - "*.lan"
+    - "*.local"
+    - "localhost.ptlogin2.qq.com"
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+  nameserver:
+    - https://1.1.1.1/dns-query
+    - https://8.8.8.8/dns-query
+  proxy-server-nameserver:
+    - https://1.1.1.1/dns-query
+  nameserver-policy:
+    "geosite:cn":
+      - 223.5.5.5
+      - 119.29.29.29
+```
+
+参数要点：
+
+- `dns-hijack: any:53` 将 TUN 接口上所有目的端口 53 的流量重定向到 Clash 内置 DNS 服务器。若仅写 `any:53` 而不写 `tcp://any:53`，TCP DNS 查询会漏过劫持。
+- `enhanced-mode: fake-ip` 下，`fake-ip-filter` 中的域名会返回真实 IP，这些域名的 DNS 查询会走 `default-nameserver` 明文解析。若 `default-nameserver` 指向国内 DNS，则这些域名的查询会泄露到本地网络。建议将 `default-nameserver` 也指向代理 DNS，或确认 filter 列表中的域名确实无需代理。
+- `proxy-server-nameserver` 专门用于解析代理服务器地址，必须指向可信 DNS，否则代理节点域名解析可能被污染导致连接失败。参考 [free-nodes/why-free-nodes-fail](/free-nodes/why-free-nodes-fail/) 中关于 DNS 污染导致节点不可用的分析。
+- `nameserver-policy` 中 `geosite:cn` 走国内 DNS 是合理设计，但需确保 `geosite:cn` 数据文件及时更新，否则新域名可能误走代理 DNS 造成解析延迟。参考 [airport/high-latency](/airport/high-latency/) 中关于 DNS 解析路径对延迟的影响。
+
+`gVisor` 栈与 `system` 栈的决策依据：若物理网卡存在多个默认网关或 VPN 虚拟网卡，`system` 栈下 DNS 查询可能从非 TUN 接口发出，此时应切换至 `gVisor` 栈。若追求吞吐量且网络环境单一，`system` 栈配合 `strict-route` 性能更优。
+
+### Windows WFP 固化规则
+
+Windows 下 TUN 客户端的 WFP 过滤器在重启后可能因驱动加载顺序变化而失效。以下 PowerShell 脚本创建持久化 WFP 规则，阻止物理网卡上的 DNS 出站流量，仅允许 TUN 接口的 DNS 流量。
+
+```powershell
+# 以管理员身份运行
+$ErrorActionPreference = "Stop"
+
+# 获取 TUN 接口索引
+$tunIf = Get-NetAdapter | Where-Object { $_.InterfaceDescription -like "*TUN*" -or $_.Name -like "*singtun*" -or $_.Name -like "*clash*" }
+if (-not $tunIf) { Write-Error "TUN adapter not found"; exit 1 }
+$tunIndex = $tunIf.ifIndex
+
+# 阻止物理网卡 DNS 出站（UDP 53）
+New-NetFirewallRule -DisplayName "Block-DNS-Leak-UDP" `
+  -Direction Outbound -Protocol UDP -RemotePort 53 `
+  -InterfaceType LAN -Action Block `
+  -Profile Any -Enabled True
+
+# 阻止物理网卡 DNS 出站（TCP 53）
+New-NetFirewallRule -DisplayName "Block-DNS-Leak-TCP" `
+  -Direction Outbound -Protocol TCP -RemotePort 53 `
+  -InterfaceType LAN -Action Block `
+  -Profile Any -Enabled True
+
+# 允许 TUN 接口 DNS 流量
+New-NetFirewallRule -DisplayName "Allow-TUN-DNS-UDP" `
+  -Direction Outbound -Protocol UDP -RemotePort 53 `
+  -InterfaceAlias $tunIf.Name -Action Allow `
+  -Profile Any -Enabled True
+
+New-NetFirewallRule -DisplayName "Allow-TUN-DNS-TCP" `
+  -Direction Outbound -Protocol TCP -RemotePort 53 `
+  -InterfaceAlias $tunIf.Name -Action Allow `
+  -Profile Any -Enabled True
+```
+
+`InterfaceType LAN` 限定规则仅作用于物理网卡，不影响 TUN 接口。规则写入注册表 `HKLM\SYSTEM\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\FirewallRules`，重启后自动加载。若使用 WFP 原生过滤器（`FwpmFilterAdd0`），需通过 `FwpmEngineOpen0` 打开引擎并设置 `FWPM_SESSION_FLAG_DYNAMIC` 为 false，否则过滤器在进程退出后消失。
+
+### Linux nftables 持久化配置
+
+Linux 下 nftables 规则需写入配置文件并启用 systemd 服务实现持久化。以下规则阻止物理网卡 DNS 出站，仅允许 TUN 接口 DNS 流量。
+
+```nft
+# /etc/nftables.d/dns-leak.nft
+table inet dns_leak {
+    chain output {
+        type filter hook output priority 0; policy accept;
+
+        # 允许 TUN 接口 DNS
+        oifname "singtun0" udp dport 53 accept
+        oifname "singtun0" tcp dport 53 accept
+        oifname "clash-tun" udp dport 53 accept
+        oifname "clash-tun" tcp dport 53 accept
+
+        # 阻止物理网卡 DNS
+        oifname != "lo" udp dport 53 drop
+        oifname != "lo" tcp dport 53 drop
+    }
+}
+```
+
+持久化步骤：
+
+```bash
+# 写入主配置
+echo 'include "/etc/nftables.d/*.nft"' >> /etc/nftables.conf
+
+# 启用并启动 nftables 服务
+systemctl enable nftables.service
+systemctl restart nftables.service
+
+# 验证规则加载
+nft list ruleset | grep -A 10 "dns_leak"
+```
+
+`priority 0` 确保规则在 `output` 钩子中优先于 conntrack 处理。若系统使用 `firewalld`，需将规则转换为 `firewalld` 的 `direct` 规则或 rich rule，否则 `firewalld` 重载时会清空 nftables 规则。
+
+### macOS pf 锚点配置
+
+macOS 的 pf 防火墙通过锚点实现规则持久化。以下配置写入 `/etc/pf.anchors/dns-leak` 并在 `/etc/pf.conf` 中引用。
+
+```pf
+# /etc/pf.anchors/dns-leak
+# 阻止物理网卡 DNS 出站
+block out quick on en0 proto udp from any to any port 53
+block out quick on en0 proto tcp from any to any port 53
+block out quick on en1 proto udp from any to any port 53
+block out quick on en1 proto tcp from any to any port 53
+
+# 允许 utun 接口 DNS
+pass out quick on utun0 proto udp from any to any port 53
+pass out quick on utun0 proto tcp from any to any port 53
+pass out quick on utun1 proto udp from any to any port 53
+pass out quick on utun1 proto tcp from any to any port 53
+```
+
+在 `/etc/pf.conf` 末尾添加：
+
+```pf
+anchor "dns-leak"
+load anchor "dns-leak" from "/etc/pf.anchors/dns-leak"
+```
+
+启用并验证：
+
+```bash
+# 加载规则
+pfctl -f /etc/pf.conf
+pfctl -e
+
+# 验证锚点规则
+pfctl -a dns-leak -s rules
+
+# 创建 LaunchDaemon 实现开机自启
+cat > /Library/LaunchDaemons/com.user.pf-dns-leak.plist << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.user.pf-dns-leak</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/sbin/pfctl</string>
+        <string>-f</string>
+        <string>/etc/pf.conf</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+</dict>
+</plist>
+EOF
+
+launchctl load /Library/LaunchDaemons/com.user.pf-dns-leak.plist
+```
+
+macOS 的 utun 接口编号在每次启动时可能变化，建议使用 `pfctl -s Interfaces` 确认实际接口名，或改用 `route-to` 规则基于路由表匹配。
+
+### 三平台防泄露配置对比
+
+| 维度 | Windows (WFP) | Linux (nftables) | macOS (pf) |
+|------|---------------|------------------|------------|
+| 规则加载时机 | 驱动加载时自动应用 | systemd 服务启动时 | LaunchDaemon 开机加载 |
+| 持久化机制 | 注册表 FirewallRules 键 | /etc/nftables.conf | /etc/pf.anchors + pf.conf |
+| TUN 接口识别 | InterfaceAlias 或 ifIndex | oifname 匹配 | 接口名（utun 编号可变） |
+| DNS 劫持配合 | 需 TUN 客户端自身劫持 | 需 TUN 客户端自身劫持 | 需 TUN 客户端自身劫持 |
+| 规则优先级 | WFP 层高于 Winsock | output 钩子 priority 0 | pf 锚点按顺序匹配 |
+| 验证命令 | `Get-NetFirewallRule` | `nft list ruleset` | `pfctl -a dns-leak -s rules` |
+| 常见失效原因 | 驱动更新后过滤器丢失 | firewalld 重载清空规则 | 系统更新重置 pf.conf |
+
+三平台共同原则：防火墙规则仅作为 TUN 客户端 DNS 劫持的补充，不能替代客户端自身的 `dns-hijack` 或 `strict_route` 配置。若客户端未正确劫持 DNS，防火墙规则只会阻断 DNS 查询导致解析失败，而非将查询重定向到代理。配置完成后务必用第 5 节的 Wireshark 流程验证物理网卡无 53 端口流量。

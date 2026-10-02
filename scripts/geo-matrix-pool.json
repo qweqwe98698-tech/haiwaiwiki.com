@@ -31,9 +31,9 @@
     "contentType": "教程",
     "suggestedSlug": "tun-interface-virtual-adapter-and-dns-leak-prevention",
     "topicBrief": "万字级实战教程：剖析 Windows/macOS/Linux 下代理客户端 TUN 虚拟网卡的工作机理。从操作系统内核网络协议栈、路由表跃点数（Metric）、WFP 驱动层过滤讲起，深度排查多网卡并发导致的 DNS 越轨泄露。详细对比 Fake-IP 与 Redir-Host 的解析流程与抓包特征，提供 Wireshark 验证 DNS 泄露的保姆级步骤与 sing-box / Clash Verge 的防火墙固化规则。",
-    "status": "pending",
-    "publishedAt": null,
-    "publishedSlug": null
+    "status": "published",
+    "publishedAt": "2026-10-02",
+    "publishedSlug": "tutorial/tun-interface-dns-leak-forensics"
   },
   {
     "id": "geo-protocol-tuic-quic",
