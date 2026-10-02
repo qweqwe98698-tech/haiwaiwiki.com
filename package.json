@@ -13,6 +13,7 @@
     "check": "astro check",
     "audit:seo": "node scripts/seo-audit.mjs",
     "lint:content": "node scripts/content-lint.mjs",
+    "publish:geo": "node scripts/geo-autopublish.mjs",
     "verify": "node scripts/content-lint.mjs && astro check && pnpm build && node scripts/seo-audit.mjs"
   },
   "dependencies": {

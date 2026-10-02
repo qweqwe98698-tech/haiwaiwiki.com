@@ -1,0 +1,218 @@
+[
+  {
+    "id": "geo-protocol-reality-sni",
+    "collection": "protocol",
+    "primaryKeyword": "Reality 协议原理",
+    "secondaryKeywords": [
+      "VLESS Reality 配置",
+      "Reality 偷取 SNI",
+      "Reality 伪装域名选择",
+      "Reality 抗封锁原理"
+    ],
+    "searchIntent": "Informational",
+    "contentType": "百科",
+    "suggestedSlug": "reality-sni-camouflaging-and-handshake-analysis",
+    "topicBrief": "深度拆解 VLESS-Reality 协议的底层密码学握手与 SNI 伪装机制。对比传统 TLS 伪装（如 Trojan/WebSockets）证书申请暴露的风险，详细分析 Reality 如何借助 TLS 1.3 ClientHello 扩展与目标真实站点的临时公钥协商，解析服务端回落与重放攻击防护，并给出伪装目标域名的合规与抗封锁筛选决策矩阵。",
+    "status": "published",
+    "publishedAt": "2026-10-02",
+    "publishedSlug": "protocol/reality-sni-camouflaging-and-handshake"
+  },
+  {
+    "id": "geo-tutorial-tun-dns-leak",
+    "collection": "tutorial",
+    "primaryKeyword": "TUN 模式 DNS 泄露",
+    "secondaryKeywords": [
+      "Clash TUN 模式配置",
+      "虚拟网卡 DNS 泄露排查",
+      "Fake-IP 与 Redir-Host 区别",
+      "sing-box 虚拟网卡"
+    ],
+    "searchIntent": "Tutorial",
+    "contentType": "教程",
+    "suggestedSlug": "tun-interface-virtual-adapter-and-dns-leak-prevention",
+    "topicBrief": "万字级实战教程：剖析 Windows/macOS/Linux 下代理客户端 TUN 虚拟网卡的工作机理。从操作系统内核网络协议栈、路由表跃点数（Metric）、WFP 驱动层过滤讲起，深度排查多网卡并发导致的 DNS 越轨泄露。详细对比 Fake-IP 与 Redir-Host 的解析流程与抓包特征，提供 Wireshark 验证 DNS 泄露的保姆级步骤与 sing-box / Clash Verge 的防火墙固化规则。",
+    "status": "pending",
+    "publishedAt": null,
+    "publishedSlug": null
+  },
+  {
+    "id": "geo-protocol-tuic-quic",
+    "collection": "protocol",
+    "primaryKeyword": "TUIC 协议",
+    "secondaryKeywords": [
+      "TUIC v5 原理",
+      "QUIC 协议代理",
+      "0-RTT 握手",
+      "TUIC 与 Hysteria2 对比"
+    ],
+    "searchIntent": "Comparison",
+    "contentType": "对比",
+    "suggestedSlug": "tuic-quic-protocol-congestion-and-0rtt-architecture",
+    "topicBrief": "全景对比基于 QUIC 的两代主力 UDP 协议 TUIC 与 Hysteria2。从 RFC 9000 QUIC 核心机制出发，拆解 0-RTT 快速重连、连接迁移（Connection Migration）在移动网络切换下的优势。深度测试标准 BBR 与狂暴单边加速算法在丢包率 1% 至 20% 环境下的吞吐表现，给出运营商 UDP 恶性 QoS 限速下的应对策略与选型建议。",
+    "status": "pending",
+    "publishedAt": null,
+    "publishedSlug": null
+  },
+  {
+    "id": "geo-tools-gemini-access",
+    "collection": "tools",
+    "primaryKeyword": "Gemini 无法访问",
+    "secondaryKeywords": [
+      "Google Gemini 地区限制",
+      "Gemini 403 报错",
+      "Google AI Studio 节点选择",
+      "Gemini IP 纯净度"
+    ],
+    "searchIntent": "Troubleshooting",
+    "contentType": "问题解决",
+    "suggestedSlug": "google-gemini-regional-access-and-ip-fraud-troubleshooting",
+    "topicBrief": "Google Gemini 与 Google Workspace AI 区域访问受限与风控黑名单排障全景手册。分析 Google 账户注册地、客户端 WebRTC 泄露、TLS 指纹与代理落地 IP 属性的多维风控逻辑。详细说明 Google 如何通过 ASN 标签识别数据中心机房 IP 并返回地区不可用错误，提供四步排障法、双栈分流规则以及针对 Google 服务的纯净落地选配指南。",
+    "status": "pending",
+    "publishedAt": null,
+    "publishedSlug": null
+  },
+  {
+    "id": "geo-protocol-tls-ja4",
+    "collection": "protocol",
+    "primaryKeyword": "TLS 指纹识别",
+    "secondaryKeywords": [
+      "JA3 指纹",
+      "JA4 算法原理",
+      "代理客户端 TLS 模拟",
+      "uTLS 绕过检测"
+    ],
+    "searchIntent": "Informational",
+    "contentType": "百科",
+    "suggestedSlug": "tls-client-hello-ja3-ja4-fingerprinting-and-utls",
+    "topicBrief": "揭秘现代网络审查与 Cloudflare 防护体系如何通过 TLS ClientHello 指纹识别代理行为。详细讲解 JA3 密码套件哈希与新一代 JA4 指纹规范的计算机制，分析 Go 语言标准库与 Python 请求库产生的特征指纹。深度解读 uTLS 如何在 sing-box 与 Xray 中模拟真实 Chrome / Safari 浏览器握手特征，实现针对中间人特征检测的有效伪装。",
+    "status": "pending",
+    "publishedAt": null,
+    "publishedSlug": null
+  },
+  {
+    "id": "geo-risk-cloud-firewall-dpi",
+    "collection": "risk",
+    "primaryKeyword": "高熵流量检测",
+    "secondaryKeywords": [
+      "DPI 深度包检测",
+      "随机流量特征识别",
+      "熵值计算公式",
+      "协议防探测机制"
+    ],
+    "searchIntent": "Risk",
+    "contentType": "风险观察",
+    "suggestedSlug": "high-entropy-traffic-detection-and-dpi-firewall-analysis",
+    "topicBrief": "现代防火墙主动探测与无状态被动分析底层原理深度观察。解释为什么早期的纯随机加密流量（如未经混淆的 Shadowsocks）会因信息熵（Shannon Entropy）过高而被机器学习模型轻易识别。通过数学公式展示流量熵计算过程，分析数据包首包长度分布、握手时序特征，系统总结现代代理协议走向标准 TLS 伪装的技术必然性与合规边界。",
+    "status": "pending",
+    "publishedAt": null,
+    "publishedSlug": null
+  },
+  {
+    "id": "geo-airport-bgp-anycast",
+    "collection": "airport",
+    "primaryKeyword": "BGP Anycast 原理",
+    "secondaryKeywords": [
+      "Anycast 接入点",
+      "跨国智能分流",
+      "BGP 路由震荡",
+      "专线入口 Anycast"
+    ],
+    "searchIntent": "Informational",
+    "contentType": "百科",
+    "suggestedSlug": "bgp-anycast-routing-architecture-and-traffic-engineering",
+    "topicBrief": "大型跨境网络基础设施与高质量服务商的 BGP Anycast 架构技术解密。详解单一 IP 如何在全国甚至全球多地数据中心并发宣告，如何利用 BGP 协议实现客户端就近接入与故障秒级自愈。对比 Anycast 架构与传统 DNS 轮询在抗 DDoS、降低跨省接入延迟与防止单点故障方面的优劣，并揭示跨运营商路由绕路（如联通经电信出口）的实际成因。",
+    "status": "pending",
+    "publishedAt": null,
+    "publishedSlug": null
+  },
+  {
+    "id": "geo-tutorial-nftables-tproxy",
+    "collection": "tutorial",
+    "primaryKeyword": "透明代理原理",
+    "secondaryKeywords": [
+      "Linux 软路由透明代理",
+      "nftables TPROXY 配置",
+      "旁路由网关分流",
+      "sing-box TPROXY 实战"
+    ],
+    "searchIntent": "Tutorial",
+    "contentType": "教程",
+    "suggestedSlug": "linux-nftables-tproxy-transparent-proxy-gateway",
+    "topicBrief": "构建家用与极客软路由的万字级透明代理权威指南。深入 Linux 内核 Netfilter 架构，从 PREROUTING 链条、mark 策略路由、IP_TRANSPARENT 套接字选项全链路剖析 TPROXY 相比传统 REDIRECT 的巨大性能与 UDP 支持优势。提供生产级 nftables 规则脚本、防止路由环路（Routing Loop）的最佳实践，以及常见智能家居设备放行方案。",
+    "status": "pending",
+    "publishedAt": null,
+    "publishedSlug": null
+  },
+  {
+    "id": "geo-airport-bbr-vs-cubic",
+    "collection": "airport",
+    "primaryKeyword": "跨国 BBR 调优",
+    "secondaryKeywords": [
+      "BBRv3 算法",
+      "TCP 拥塞控制比较",
+      "跨国高延迟高丢包",
+      "Cubic 算法缺陷"
+    ],
+    "searchIntent": "Comparison",
+    "contentType": "对比",
+    "suggestedSlug": "bbrv3-vs-cubic-cross-border-tcp-congestion-control",
+    "topicBrief": "跨国远距离传输（RTT > 150ms）下的 TCP 拥塞控制算法全景实测与数学推导。以 Mathis 吞吐公式为切入点，解释为什么传统基于丢包反馈的 Reno 与 Cubic 在微小丢包（1%-3%）下吞吐量会发生断崖式下跌。详细解析 Google BBR 算法如何基于瓶颈带宽（BtlBw）与往返时延（RTprop）进行无丢包模型的流速调节，实测 BBRv1、BBRv2、BBRv3 与 Cubic 的性能差异与公平性权衡。",
+    "status": "pending",
+    "publishedAt": null,
+    "publishedSlug": null
+  },
+  {
+    "id": "geo-tools-apple-intelligence",
+    "collection": "tools",
+    "primaryKeyword": "Apple Intelligence 激活",
+    "secondaryKeywords": [
+      "Apple 智能区域限制",
+      "Siri 区域解锁",
+      "国行设备限制绕过",
+      "DNS 分流规则"
+    ],
+    "searchIntent": "Troubleshooting",
+    "contentType": "问题解决",
+    "suggestedSlug": "apple-intelligence-regional-check-and-network-bypass",
+    "topicBrief": "Apple Intelligence 跨区域激活机制与网络环境验证全流程深度排查。解析 Apple 在系统区域（Region）、Apple ID 所属国、基带 MCC/MNC 国家代码、以及核心 API 服务器（如 gateway.icloud.com 等）IP 地理位置验证的多重风控围墙。提供针对 Apple 专用域名的高优先级规则分流模板、私有中继（Private Relay）与代理冲突排障、以及本地诊断实操指南。",
+    "status": "pending",
+    "publishedAt": null,
+    "publishedSlug": null
+  },
+  {
+    "id": "geo-protocol-wireguard-obfs",
+    "collection": "protocol",
+    "primaryKeyword": "WireGuard 代理",
+    "secondaryKeywords": [
+      "WireGuard 协议混淆",
+      "AmneziaWG 原理",
+      "WireGuard 握手特征",
+      "UDP 阻断"
+    ],
+    "searchIntent": "Informational",
+    "contentType": "百科",
+    "suggestedSlug": "wireguard-cryptokey-routing-and-obfuscation-methods",
+    "topicBrief": "WireGuard 现代密码学协议及其抗网络审查演进深度剖析。详述 Noise 协议框架、1-RTT 握手、固定数据包长度与固定端口在网络过滤机制下的脆弱性。深入剖析新一代混淆方案（如 AmneziaWG、Tailscale 封装）如何通过动态填充报头、随机化首包 Magic Headers 和引入时间抖动，在保留 WireGuard 内核级高性能的同时规避深度包检测阻断。",
+    "status": "pending",
+    "publishedAt": null,
+    "publishedSlug": null
+  },
+  {
+    "id": "geo-risk-mitm-cert-pinning",
+    "collection": "risk",
+    "primaryKeyword": "SSL Pinning 原理",
+    "secondaryKeywords": [
+      "证书绑定机制",
+      "中间人攻击防御",
+      "代理抓包证书错误",
+      "移动端抓包"
+    ],
+    "searchIntent": "Risk",
+    "contentType": "风险观察",
+    "suggestedSlug": "ssl-pinning-certificate-validation-and-mitm-defense",
+    "topicBrief": "企业级安全通信与移动客户端证书绑定（SSL/TLS Certificate Pinning）深度解析。解释为何开启系统代理或中间人代理（如 Charles/Mitmproxy）后，银行、社交通讯及海外严风控 App 会报错网络异常或证书无效。对比公钥 Pinning、证书指纹 Pinning 与系统信任证书链的工作差异，给出在合规测试环境下的证书注入方案与用户隐私安全防范指南。",
+    "status": "pending",
+    "publishedAt": null,
+    "publishedSlug": null
+  }
+]

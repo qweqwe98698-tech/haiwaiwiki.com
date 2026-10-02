@@ -20,3 +20,6 @@ pnpm-debug.log*
 # editor
 .vscode/
 .idea/
+
+# temporary auto-publish metadata
+.last_published_meta.txt
