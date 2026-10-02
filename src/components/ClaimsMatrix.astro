@@ -52,7 +52,7 @@ const counts = cols.map((_, i) => rows.filter((r) => r.cells[i]).length);
         {rows.map((r) => (
           <tr>
             <td class="sticky left-0 z-10 border-b border-rule bg-paper px-4 py-2 whitespace-nowrap">
-              <a href={`/review/${r.id}/`} class="text-ink hover:text-seal">{r.name}</a>
+              <span class="text-ink font-medium">{r.name}</span>
             </td>
             {r.cells.map((on) => (
               <td class="border-b border-rule px-3 py-2 text-center">

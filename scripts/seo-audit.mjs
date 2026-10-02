@@ -52,13 +52,15 @@ const pages = htmlFiles.map((file) => {
   const h1s = [...html.matchAll(/<h1[\s>]/gi)];
   const noindex = /<meta\s+name="robots"\s+content="[^"]*noindex/i.test(html);
   const links = [...html.matchAll(/href="([^"]*)"/gi)].map((m) => m[1]);
-  return { file, path: toPath(file), html, title: titles[0] ?? '', titleCount: titles.length, desc, canonicals, h1Count: h1s.length, noindex, links };
+  const isRedirect = /<meta\s+http-equiv="refresh"/i.test(html);
+  return { file, path: toPath(file), html, title: titles[0] ?? '', titleCount: titles.length, desc, canonicals, h1Count: h1s.length, noindex, links, isRedirect };
 });
 
-const indexable = pages.filter((p) => !p.noindex && p.path !== '/404.html');
+const indexable = pages.filter((p) => !p.noindex && !p.isRedirect && p.path !== '/404.html');
 
 /* 1. 单页结构检查 */
 for (const p of pages) {
+  if (p.isRedirect) continue;
   const is404 = p.path === '/404.html';
   if (p.titleCount !== 1) errors.push(`[title] ${p.path} 有 ${p.titleCount} 个 <title>`);
   if (!p.title) errors.push(`[title] ${p.path} 标题为空`);

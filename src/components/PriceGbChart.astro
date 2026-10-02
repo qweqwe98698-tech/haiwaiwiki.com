@@ -36,7 +36,7 @@ const max = Math.max(...shown.map((r) => r.perGb));
   <div class="divide-y divide-rule">
     {shown.map((r) => (
       <div class="grid grid-cols-[5.5rem_1fr_5.5rem] items-center gap-3 px-4 py-2">
-        <a href={`/review/${r.id}/`} class="truncate py-1 text-sm text-ink hover:text-seal">{r.name}</a>
+        <span class="truncate py-1 text-sm text-ink font-medium">{r.name}</span>
         <div class="h-3 bg-paper-2" role="presentation">
           <div class="h-3 bg-seal" style={`width:${Math.round((r.perGb / max) * 100)}%`}></div>
         </div>

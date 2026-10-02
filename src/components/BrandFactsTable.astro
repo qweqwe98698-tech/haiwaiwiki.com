@@ -53,7 +53,7 @@ const rel = 'nofollow sponsored noopener noreferrer';
         {rows.map((b) => (
           <tr>
             <td class={`${td} sticky left-0 z-10 bg-paper pl-4 whitespace-nowrap font-medium`}>
-              <a href={`/review/${b.id}/`} class="text-ink hover:text-seal">{b.name}</a>
+              <span class="text-ink font-semibold">{b.name}</span>
             </td>
             <td class={`${td} whitespace-nowrap`}>{b.priceFrom}</td>
             <td class={`${td} whitespace-nowrap tabular-nums`}>≈¥{perGb(b)}</td>

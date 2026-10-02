@@ -41,6 +41,9 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
   },
+  redirects: {
+    '/review/': '/directory/',
+  },
   server: {
     port: Number(process.env.PORT) || 4321,
   },

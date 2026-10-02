@@ -41,7 +41,7 @@ const rel = 'nofollow sponsored noopener noreferrer';
       <div class="bg-paper p-4 flex flex-col">
         <div class="flex items-baseline gap-2">
           <span class="index-num text-xs">{String(b.featuredRank).padStart(2, '0')}</span>
-          <a href={`/review/${b.id}/`} class="font-bold text-ink hover:text-seal">{b.name}</a>
+          <span class="font-bold text-ink">{b.name}</span>
         </div>
         <p class="mt-1.5 text-sm text-ink-2">{b.priceFrom}</p>
 
@@ -72,7 +72,7 @@ const rel = 'nofollow sponsored noopener noreferrer';
         )}
         <p class="mt-3 pt-2 border-t border-rule text-sm flex gap-4">
           <a href={b.affUrl} rel={rel} target="_blank">官网 ↗</a>
-          <a href={`/review/${b.id}/`} class="text-ink-2 hover:text-seal">评测档案</a>
+          <a href="/directory/" class="text-ink-2 hover:text-seal">档案对照</a>
         </p>
       </div>
     ))}

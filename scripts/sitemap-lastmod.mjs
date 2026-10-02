@@ -15,7 +15,6 @@ const SITE = 'https://haiwaiwiki.com';
 
 const BASE = {
   airport: '/airport/',
-  review: '/review/',
   tutorial: '/tutorial/',
   protocol: '/protocol/',
   'free-nodes': '/free-nodes/',

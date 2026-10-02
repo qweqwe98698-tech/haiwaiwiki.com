@@ -18,19 +18,17 @@ export interface Section {
 /** 栏目索引(编号即站内索引号,见 SITE-DNA §5) */
 export const SECTIONS: Section[] = [
   { num: '01', name: '机场推荐', url: '/airport/', collection: 'airport', brief: '怎么选机场:决策框架、场景推荐与选择标准', inNav: true },
-  { num: '02', name: '机场评测', url: '/review/', collection: 'review', brief: '单个机场品牌的评测档案与核验记录', inNav: true },
-  { num: '03', name: '机场导航', url: '/directory/', brief: '机场品牌档案库:按价格、线路、特点对照', inNav: true },
-  { num: '04', name: '客户端教程', url: '/tutorial/', collection: 'tutorial', brief: 'Clash、Shadowrocket、v2rayN 等客户端的使用方法', inNav: true },
-  { num: '05', name: '代理知识', url: '/protocol/', collection: 'protocol', brief: '协议、线路与 IP 的技术词条:一次讲清一个概念', inNav: true },
-  { num: '06', name: '免费节点', url: '/free-nodes/', collection: 'free-nodes', brief: '免费节点的原理、限制与风险,以及和机场的区别', inNav: false },
-  { num: '07', name: '风险预警', url: '/risk/', collection: 'risk', brief: '跑路信号、避坑方法与风险观察记录', inNav: true },
-  { num: '08', name: '网络工具', url: '/tools/', collection: 'tools', brief: 'ChatGPT、Netflix、Telegram 等应用的访问问题排查', inNav: true },
+  { num: '02', name: '机场档案', url: '/directory/', brief: '机场品牌档案库:按价格、线路、特点对照', inNav: true },
+  { num: '03', name: '客户端教程', url: '/tutorial/', collection: 'tutorial', brief: 'Clash、Shadowrocket、v2rayN 等客户端的使用方法', inNav: true },
+  { num: '04', name: '代理知识', url: '/protocol/', collection: 'protocol', brief: '协议、线路与 IP 的技术词条:一次讲清一个概念', inNav: true },
+  { num: '05', name: '免费节点', url: '/free-nodes/', collection: 'free-nodes', brief: '免费节点的原理、限制与风险,以及和机场的区别', inNav: false },
+  { num: '06', name: '风险预警', url: '/risk/', collection: 'risk', brief: '跑路信号、避坑方法与风险观察记录', inNav: true },
+  { num: '07', name: '网络工具', url: '/tools/', collection: 'tools', brief: 'ChatGPT、Netflix、Telegram 等应用的访问问题排查', inNav: true },
 ];
 
 /** 集合名 → URL 前缀(与 INFORMATION-ARCHITECTURE.md §4 同步) */
 export const COLLECTION_BASE: Record<string, string> = {
   airport: '/airport/',
-  review: '/review/',
   tutorial: '/tutorial/',
   protocol: '/protocol/',
   'free-nodes': '/free-nodes/',
@@ -61,16 +59,10 @@ export const STATIC_PAGES: Record<
       '机场推荐栏目:不排名次,先给决策框架。从需求、预算、线路类型到风险信号,帮你建立自己的机场选择标准,再对照档案库与评测做决定。',
     primaryKeyword: '机场推荐',
   },
-  '/review/': {
-    title: '机场评测档案 — 核验规则与评测数据库 — HaiwaiWiki',
-    description:
-      '机场评测栏目:每个品牌一份档案,标注数据来源(实测/官方资料)与核验时间。没有实测就不写测速数字,官方宣称一律注明未经本站验证。',
-    primaryKeyword: '机场评测',
-  },
   '/directory/': {
-    title: '机场导航:16 家服务商公开信息对照 — HaiwaiWiki',
+    title: '机场档案:16 家服务商公开信息对照 — HaiwaiWiki',
     description:
-      '机场导航:整理 16 家品牌官网或公开页面能核验的信息——起步价格、套餐流量、付款周期、官方宣称的线路类型。不做速度或稳定性排名,无法核验的字段统一标注暂未核验。',
+      '机场档案库:整理 16 家品牌官网或公开页面能核验的信息——起步价格、套餐流量、付款周期、官方宣称的线路类型。不做速度或稳定性排名,无法核验的字段统一标注暂未核验。',
     primaryKeyword: '机场导航',
   },
   '/tutorial/': {

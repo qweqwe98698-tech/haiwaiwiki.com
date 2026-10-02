@@ -48,22 +48,6 @@ const airport = makeCollection('airport', baseSchema);
 const freeNodes = makeCollection('free-nodes', baseSchema);
 const toolsCol = makeCollection('tools', baseSchema);
 
-const review = makeCollection(
-  'review',
-  baseSchema.extend({
-    brand: z.string(),
-    officialUrl: z.string().url().optional(),
-    affiliateUrl: z.string().url().optional(),
-    affCode: z.string().optional(),
-    priceFrom: z.string().optional(), // 如 "¥15/月(官方标价)"
-    networkType: z.array(z.string()).default([]),
-    platforms: z.array(z.string()).default([]),
-    dataSource: z.enum(['实测', '官方资料', '公开资料']).default('官方资料'),
-    testedAt: z.string().regex(/^\d{4}-\d{2}$/).optional(),
-    featured: z.boolean().default(false),
-  })
-);
-
 const tutorial = makeCollection(
   'tutorial',
   baseSchema.extend({
@@ -99,7 +83,6 @@ const risk = makeCollection(
 
 export const collections = {
   airport,
-  review,
   tutorial,
   protocol,
   'free-nodes': freeNodes,

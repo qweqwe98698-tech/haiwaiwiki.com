@@ -61,7 +61,7 @@ const groups = [
           {g.items.length > 0 ? (
             g.items.map((it) => (
               <li class="flex items-center justify-between px-4 py-2 text-sm">
-                <a href={`/review/${it.id}/`} class="text-ink hover:text-seal">{it.name}</a>
+                <span class="text-ink font-medium">{it.name}</span>
                 <span class="text-xs text-ink-2">{it.tag}</span>
               </li>
             ))
