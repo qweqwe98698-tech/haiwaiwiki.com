@@ -49,9 +49,9 @@
     "contentType": "对比",
     "suggestedSlug": "tuic-quic-protocol-congestion-and-0rtt-architecture",
     "topicBrief": "全景对比基于 QUIC 的两代主力 UDP 协议 TUIC 与 Hysteria2。从 RFC 9000 QUIC 核心机制出发，拆解 0-RTT 快速重连、连接迁移（Connection Migration）在移动网络切换下的优势。深度测试标准 BBR 与狂暴单边加速算法在丢包率 1% 至 20% 环境下的吞吐表现，给出运营商 UDP 恶性 QoS 限速下的应对策略与选型建议。",
-    "status": "pending",
-    "publishedAt": null,
-    "publishedSlug": null
+    "status": "published",
+    "publishedAt": "2026-10-05",
+    "publishedSlug": "protocol/tuic-hysteria2-quic-congestion-0rtt"
   },
   {
     "id": "geo-tools-gemini-access",
