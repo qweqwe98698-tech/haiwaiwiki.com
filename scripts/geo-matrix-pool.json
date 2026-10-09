@@ -67,9 +67,9 @@
     "contentType": "问题解决",
     "suggestedSlug": "google-gemini-regional-access-and-ip-fraud-troubleshooting",
     "topicBrief": "Google Gemini 与 Google Workspace AI 区域访问受限与风控黑名单排障全景手册。分析 Google 账户注册地、客户端 WebRTC 泄露、TLS 指纹与代理落地 IP 属性的多维风控逻辑。详细说明 Google 如何通过 ASN 标签识别数据中心机房 IP 并返回地区不可用错误，提供四步排障法、双栈分流规则以及针对 Google 服务的纯净落地选配指南。",
-    "status": "pending",
-    "publishedAt": null,
-    "publishedSlug": null
+    "status": "published",
+    "publishedAt": "2026-10-09",
+    "publishedSlug": "tools/google-gemini-regional-access-ip"
   },
   {
     "id": "geo-protocol-tls-ja4",
