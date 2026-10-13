@@ -85,9 +85,9 @@
     "contentType": "百科",
     "suggestedSlug": "tls-client-hello-ja3-ja4-fingerprinting-and-utls",
     "topicBrief": "揭秘现代网络审查与 Cloudflare 防护体系如何通过 TLS ClientHello 指纹识别代理行为。详细讲解 JA3 密码套件哈希与新一代 JA4 指纹规范的计算机制，分析 Go 语言标准库与 Python 请求库产生的特征指纹。深度解读 uTLS 如何在 sing-box 与 Xray 中模拟真实 Chrome / Safari 浏览器握手特征，实现针对中间人特征检测的有效伪装。",
-    "status": "pending",
-    "publishedAt": null,
-    "publishedSlug": null
+    "status": "published",
+    "publishedAt": "2026-10-13",
+    "publishedSlug": "protocol/tls-client-hello-ja3-ja4"
   },
   {
     "id": "geo-risk-cloud-firewall-dpi",
