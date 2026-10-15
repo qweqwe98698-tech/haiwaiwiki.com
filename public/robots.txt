@@ -1,7 +1,23 @@
+User-agent: Googlebot
+Allow: /
+Disallow: /search/
+
 User-agent: bingbot
 Allow: /
 Disallow: /search/
 Crawl-delay: 1
+
+User-agent: Baiduspider
+Allow: /
+Disallow: /search/
+
+User-agent: YisouSpider
+Allow: /
+Disallow: /search/
+
+User-agent: Sogou web spider
+Allow: /
+Disallow: /search/
 
 User-agent: *
 Allow: /

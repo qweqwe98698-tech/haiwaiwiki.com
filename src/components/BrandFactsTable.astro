@@ -8,7 +8,7 @@ import brandsData from '../data/brands.json';
 interface Props {
   title?: string;
 }
-const { title = '16 家公开信息对照表' } = Astro.props;
+const { title = '28 家公开信息对照表' } = Astro.props;
 
 const rows = [...brandsData.brands].sort(
   (a, b) => a.priceNum / a.trafficGb - b.priceNum / b.trafficGb
@@ -53,7 +53,13 @@ const rel = 'nofollow sponsored noopener noreferrer';
         {rows.map((b) => (
           <tr>
             <td class={`${td} sticky left-0 z-10 bg-paper pl-4 whitespace-nowrap font-medium`}>
-              <span class="text-ink font-semibold">{b.name}</span>
+              <a href={`/brands/${b.id}/`} class="text-ink font-semibold hover:text-seal hover:underline inline-flex items-center gap-1.5">
+                {b.name}
+                {b.featuredRank === 1 && (
+                  <span class="text-[0.65rem] bg-seal text-white px-1 py-0.2 rounded-xs font-normal">主推</span>
+                )}
+              </a>
+              <a href={`/brands/${b.id}/`} class="block text-[0.68rem] text-ink-2 hover:text-seal">评测详情 →</a>
             </td>
             <td class={`${td} whitespace-nowrap`}>{b.priceFrom}</td>
             <td class={`${td} whitespace-nowrap tabular-nums`}>≈¥{perGb(b)}</td>
@@ -76,7 +82,7 @@ const rel = 'nofollow sponsored noopener noreferrer';
     </table>
   </div>
   <p class="border-x border-b border-rule px-4 py-2 text-xs text-ink-2 leading-relaxed">
-    设备数量、退款规则与官网状态页三项,16 家的公开资料均未写明,因此统一标为「暂未核验」——
+    设备数量、退款规则与官网状态页三项,未公开标明的品牌统一标为「暂未核验」——
     这三项都属于本站建议的<strong class="font-semibold text-ink">购前必问项</strong>,请直接向客服确认后再付款。
     价格与优惠随时可能调整,以官网当前页面为准。
   </p>

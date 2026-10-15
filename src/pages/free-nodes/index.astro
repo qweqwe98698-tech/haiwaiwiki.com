@@ -2,15 +2,49 @@
 import HubLayout from '../../layouts/HubLayout.astro';
 ---
 
-<HubLayout url="/free-nodes/" listTitle="相关条目">
-  <p>
-    先说清楚:<strong class="text-ink">本站不分发免费节点,也不维护免费订阅列表。</strong>
-    这个栏目回答的是另一类问题——免费节点从哪里来、为什么用几天就失效、
-    背后有哪些你看不见的成本(隐私、安全、账号风险),以及它和付费机场订阅的真实差距在哪里。
-    看完这些,再决定要不要把自己的流量交给一个不知道谁在运营的服务器。
-  </p>
+<HubLayout url="/free-nodes/" listTitle="免费节点核心技术与风险词条">
+  <div class="space-y-4">
+    <p>
+      先说清楚原则：<strong class="text-ink font-semibold">本站不分发免费节点，不维护免费订阅列表，亦不提供任何一键导入的公共代理配置。</strong>
+    </p>
+    <p>
+      本栏目存在的核心价值，是用计算机网络与网络安全的底层原理，讲透公共免费代理背后的运作机制：它们从哪里来、为什么通常在数小时或几天内就会集体失效、背后隐藏着哪些普通用户看不见的沉重成本（隐私明文嗅探、DNS 劫持、海外账号连锁风控封号），以及它与合规付费服务的本质架构差距。
+    </p>
+
+    <h2 class="text-base font-bold text-ink pt-4 border-t border-rule">一、互联网上流通的公共免费节点究竟来自哪里？</h2>
+    <p>
+      跨境服务器与国际带宽属于高昂的物理成本资源，世界上不存在无需维护成本的“纯慈善”公网节点。全网流通的免费节点主要源于以下四类渠道：
+    </p>
+    <ul class="list-disc pl-5 space-y-1.5 text-xs text-ink-2">
+      <li><strong>全网弱口令扫描与未授权开放资产</strong>：自动化脚本全天候扫描全球云主机与路由器，发现暴露在外的代理端口并批量提取成订阅；</li>
+      <li><strong>商业广告与黑灰产引流池</strong>：运营方以“每日更新免费订阅”为诱饵，将用户吸引至带有高风险广告的页面、电报群或捆绑恶意软件的安装包中；</li>
+      <li><strong>安全研究或恶意数据捕获蜜罐（Honeypot）</strong>：某些节点由第三方故意开放，用于监听未加密通信、抓取用户浏览偏好或进行凭据撞库测试；</li>
+      <li><strong>云服务商免费体验配额被滥用</strong>：利用学生包、试用券批量生成的临时服务器，配额耗尽后立刻关机丢弃。</li>
+    </ul>
+
+    <h2 class="text-base font-bold text-ink pt-4 border-t border-rule">二、使用免费节点不可避免的技术代价</h2>
+    <p>
+      当数百乃至数千名未知访客同时挤占同一条未做 QoS 流量调度的公共通道时，会带来确定性的恶果：
+    </p>
+    <ul class="list-disc pl-5 space-y-1.5 text-xs text-ink-2">
+      <li><strong>晚高峰极度拥塞与高丢包</strong>：公网直连线路在晚高峰丢包率往往超过 30%–60%，视频频繁降画质缓冲，网页握手经常超时；</li>
+      <li><strong>IP 严重污染与 AI/流媒体风控</strong>：大量被滥用的节点 IP 会被 Cloudflare、Google、OpenAI 及 Netflix 列入高风险黑名单，导致疯狂弹出验证码甚至封禁登录账号；</li>
+      <li><strong>中间人篡改（MITM）风险</strong>：虽然 HTTPS 能加密绝大多数数据，但未知的代理服务器依然可以观测您访问的全部域名、截获并篡改未经加密的 DNS 解析结果。</li>
+    </ul>
+
+    <h2 class="text-base font-bold text-ink pt-4 border-t border-rule">三、如果必须临时使用免费节点应急，请遵守安全隔离防线</h2>
+    <ol class="list-decimal pl-5 space-y-1 text-xs text-ink-2">
+      <li><strong>严禁在免费节点环境下登录银行、支付软件或主力个人邮箱</strong>；</li>
+      <li><strong>在客户端内强制开启 DoH/DoT 安全加密 DNS</strong>，防止本地查询被节点服务器篡改；</li>
+      <li><strong>优先选用支持 TUN 虚拟网卡隔离的客户端</strong>，并确保系统防火墙处于开启状态；</li>
+      <li><strong>任务完成后立即断开并移除该订阅链接</strong>，避免后台长期建立不透明连接。</li>
+    </ol>
+  </div>
+
   <p slot="aside">
-    如果你正在找免费节点的替代方案,可以从<a href="/airport/">机场怎么选</a>开始;
-    低价套餐的选法和坑,那边讲得更完整。
+    <strong>选型思考</strong>：<br />
+    与其每天耗费数小时寻找失效的免费节点，不如了解低门槛按量计费（Pay-as-you-go）或轻量入门月付方案。欢迎查阅
+    <a href="/airport/how-to-choose/" class="text-seal font-medium underline">《机场怎么选》决策框架</a> 与
+    <a href="/directory/" class="text-seal font-medium underline">《28 家机场品牌公开信息对照表》</a>。
   </p>
 </HubLayout>

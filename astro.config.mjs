@@ -14,7 +14,10 @@ export default defineConfig({
   integrations: [
     mdx(),
     sitemap({
-      filter: (page) => !page.includes('/search/'),
+      filter: (page) =>
+        !page.includes('/search/') &&
+        page !== 'https://haiwaiwiki.com/brands/' &&
+        page !== 'https://haiwaiwiki.com/review/',
       // lastmod 让搜索引擎知道哪些页面值得重新抓取。
       // 内容页的时间来自 frontmatter,由 scripts/sitemap-lastmod.mjs 在构建后写入;
       // 这里给静态页一个统一的构建时间兜底。
@@ -43,6 +46,7 @@ export default defineConfig({
   },
   redirects: {
     '/review/': '/directory/',
+    '/brands/': '/directory/',
   },
   server: {
     port: Number(process.env.PORT) || 4321,

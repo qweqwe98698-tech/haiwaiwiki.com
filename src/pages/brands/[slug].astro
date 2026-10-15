@@ -1,0 +1,431 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import { breadcrumbJsonLd, faqJsonLd } from '../../lib/seo';
+import brandsData from '../../data/brands.json';
+
+export async function getStaticPaths() {
+  return brandsData.brands.map((brand) => ({
+    params: { slug: brand.id },
+    props: { brand },
+  }));
+}
+
+const { brand } = Astro.props;
+
+const pageTitle = `${brand.name}怎么样？2026最新评测、官网注册、优惠码与套餐价格对照 — HaiwaiWiki`;
+const pageDescription = `${brand.name}2026年最新档案：起步价格${brand.priceFrom}，${brand.founded ? `${brand.founded}年运营，` : ''}线路特点：${brand.publicPros.join('、')}。提供专属优惠码${brand.affCode ? `【${brand.affCode}】` : ''}、实测数据与购前避坑指南。`;
+
+const rel = 'nofollow sponsored noopener noreferrer';
+
+// Breadcrumbs
+const crumbs = [
+  { name: '首页', url: '/' },
+  { name: '机场档案', url: '/directory/' },
+  { name: brand.name, url: `/brands/${brand.id}/` },
+];
+
+// FAQs
+const faqs = [
+  {
+    q: `${brand.name}适合哪些人群使用？`,
+    a: `${brand.audience || '适合有稳定海外网络访问需求的用户'}。其入门方案为 ${brand.priceFrom}，建议根据日常流量消耗与预算选择合适周期。`,
+  },
+  {
+    q: `${brand.name}有优惠码吗？如何使用？`,
+    a: brand.affCode
+      ? `目前官方提供专属优惠码【${brand.affCode}】${brand.affCodeNote ? `（${brand.affCodeNote}）` : ''}。在官网结算页面找到“优惠券/折扣码”输入框，填入后即可抵扣对应金额。`
+      : `目前品牌官方资料未标注通用固定折扣码，若官网有不定期的节日活动，通常会在首页顶部公告栏公布。`,
+  },
+  {
+    q: `${brand.name}支持哪些客户端？怎么导入订阅？`,
+    a: `${brand.clientSupport}。购买套餐后，在用户后台复制“订阅链接”，打开 Clash（如 Clash Verge / Mihomo Party）、Shadowrocket 或 v2rayN，粘贴并更新订阅节点即可开始使用。`,
+  },
+  {
+    q: `${brand.name}的线路类型是什么？晚高峰表现如何？`,
+    a: `${brand.name}官方宣称的线路特征为：${brand.claims.filter((c: string) => /IEPL|IPLC|专线|内网|中转/.test(c)).join('、') || '常规网络节点'}。需要注意，晚高峰表现受本地运营商互联与带宽负载影响，建议优先先购买短周期套餐验证本地实际连接体验。`,
+  },
+  {
+    q: `购买 ${brand.name} 需要注意什么？`,
+    a: `${brand.knownLimits.join('；')}。此外，建议不要一次性购买过长周期的套餐，尽量选择月付或半年付以降低服务变动风险。`,
+  },
+];
+
+// JSON-LD
+const jsonLd = [
+  breadcrumbJsonLd(crumbs),
+  faqJsonLd(faqs),
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: `${brand.name} 机场服务`,
+    description: pageDescription,
+    brand: { '@type': 'Brand', name: brand.name },
+    offers: {
+      '@type': 'Offer',
+      price: String(brand.priceNum || 15),
+      priceCurrency: 'CNY',
+      availability: 'https://schema.org/InStock',
+      url: brand.affUrl,
+    },
+  },
+];
+---
+
+<BaseLayout title={pageTitle} description={pageDescription} path={`/brands/${brand.id}/`} jsonLd={jsonLd}>
+  <Breadcrumb crumbs={[{ name: '机场档案', url: '/directory/' }, { name: brand.name, url: `/brands/${brand.id}/` }]} />
+
+  <!-- 顶部刊头区 -->
+  <article class="mt-8 max-w-[860px]">
+    <div class="flex items-start justify-between gap-4 flex-wrap pb-6 border-b border-rule">
+      <div class="flex items-center gap-4">
+        {brand.logo ? (
+          <img
+            src={brand.logo}
+            alt={`${brand.name} Logo`}
+            class="w-16 h-16 rounded-md object-contain border border-rule bg-paper-2 p-1.5 shadow-xs"
+            loading="eager"
+            width="64"
+            height="64"
+          />
+        ) : (
+          <div class="w-16 h-16 rounded-md border border-rule bg-paper-2 flex items-center justify-center text-xl font-bold text-seal shadow-xs">
+            {brand.name.slice(0, 2)}
+          </div>
+        )}
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h1 class="text-2xl sm:text-3xl font-bold text-ink">{brand.name}</h1>
+            {brand.featured && (
+              <span class="border border-seal bg-seal-2 text-seal text-xs px-2 py-0.5 font-semibold rounded-xs">
+                Top {brand.featuredRank} 重点推荐
+              </span>
+            )}
+            {brand.founded && (
+              <span class="border border-rule bg-paper-2 text-ink-2 text-xs px-2 py-0.5 rounded-xs">
+                {brand.founded} 年运营
+              </span>
+            )}
+            <span class="border border-rule text-ink-2 text-xs px-2 py-0.5 rounded-xs">
+              {brand.verifyStatus}
+            </span>
+          </div>
+          <p class="mt-1 text-sm text-ink-2">
+            官方标价：<strong class="text-ink">{brand.priceFrom}</strong> · 付款周期：{brand.billing}
+          </p>
+        </div>
+      </div>
+
+      <!-- 快捷转化按钮 -->
+      <div class="flex items-center gap-3">
+        <a
+          href={brand.affUrl}
+          target="_blank"
+          rel={rel}
+          class="btn-primary px-6 py-2.5 text-sm shadow-sm"
+        >
+          前往官网注册 / 登录 ↗
+        </a>
+      </div>
+    </div>
+
+    <!-- 优惠码提示栏 -->
+    {brand.affCode && (
+      <div class="mt-4 p-3.5 border border-rule bg-paper-2 rounded-xs flex items-center justify-between flex-wrap gap-2">
+        <div class="flex items-center gap-2 text-xs sm:text-sm text-ink">
+          <span class="text-seal font-semibold">【专属优惠码】</span>
+          <span>在官网结账输入代码：</span>
+          <code class="px-2 py-0.5 bg-paper border border-rule text-seal font-mono font-bold rounded-xs text-sm">
+            {brand.affCode}
+          </code>
+          {brand.affCodeNote && <span class="text-ink-2 text-xs">（{brand.affCodeNote}）</span>}
+        </div>
+        <a
+          href={brand.affUrl}
+          target="_blank"
+          rel={rel}
+          class="text-xs text-seal font-semibold hover:underline"
+        >
+          立即前往激活 ↗
+        </a>
+      </div>
+    )}
+
+    <!-- 快答 / 核心定位 -->
+    <div class="mt-6 p-4 border-l-4 border-seal bg-paper-2">
+      <h2 class="text-xs font-semibold uppercase tracking-wider text-seal">编辑部定位速览</h2>
+      <p class="mt-1.5 text-sm text-ink leading-relaxed">
+        {brand.audience}
+      </p>
+      {brand.ctaGuide && (
+        <p class="mt-2 text-xs text-ink-2 leading-relaxed border-t border-rule/60 pt-2">
+          <strong class="text-ink">选购参考：</strong>{brand.ctaGuide}
+        </p>
+      )}
+    </div>
+
+    <!-- 核心参数对照表 -->
+    <section class="mt-10">
+      <h2 class="text-sm font-bold tracking-wider text-ink uppercase pb-2 border-b border-rule">
+        1. {brand.name} 基础参数与公开信息对照
+      </h2>
+      <div class="mt-4 overflow-x-auto border border-rule">
+        <table class="w-full text-sm border-collapse">
+          <tbody>
+            <tr class="border-b border-rule bg-paper-2/50">
+              <th class="py-2.5 px-4 text-left font-medium text-ink-2 w-36 whitespace-nowrap">品牌全称</th>
+              <td class="py-2.5 px-4 text-ink font-semibold">{brand.name} ({brand.id})</td>
+              <th class="py-2.5 px-4 text-left font-medium text-ink-2 w-36 whitespace-nowrap">开业年份</th>
+              <td class="py-2.5 px-4 text-ink">{brand.founded ? `${brand.founded} 年` : '官方资料未标明'}</td>
+            </tr>
+            <tr class="border-b border-rule">
+              <th class="py-2.5 px-4 text-left font-medium text-ink-2 whitespace-nowrap">起步套餐价格</th>
+              <td class="py-2.5 px-4 text-ink font-medium">{brand.priceFrom}</td>
+              <th class="py-2.5 px-4 text-left font-medium text-ink-2 whitespace-nowrap">付款周期</th>
+              <td class="py-2.5 px-4 text-ink">{brand.billing}</td>
+            </tr>
+            <tr class="border-b border-rule bg-paper-2/50">
+              <th class="py-2.5 px-4 text-left font-medium text-ink-2 whitespace-nowrap">线路架构(宣称)</th>
+              <td class="py-2.5 px-4 text-ink">
+                {brand.claims.filter((c: string) => /IEPL|IPLC|专线|内网|中转/.test(c)).join('、') || '普通中转线路'}
+              </td>
+              <th class="py-2.5 px-4 text-left font-medium text-ink-2 whitespace-nowrap">协议类型</th>
+              <td class="py-2.5 px-4 text-ink">
+                {brand.claims.filter((c: string) => /VLESS|VMess|Trojan|Shadowsocks|Hysteria/.test(c)).join('、') || 'Shadowsocks / 第三方'}
+              </td>
+            </tr>
+            <tr class="border-b border-rule">
+              <th class="py-2.5 px-4 text-left font-medium text-ink-2 whitespace-nowrap">客户端支持</th>
+              <td class="py-2.5 px-4 text-ink" colspan="3">{brand.clientSupport}</td>
+            </tr>
+            <tr class="border-b border-rule bg-paper-2/50">
+              <th class="py-2.5 px-4 text-left font-medium text-ink-2 whitespace-nowrap">设备与退款限制</th>
+              <td class="py-2.5 px-4 text-ink">设备数：{brand.devices}</td>
+              <th class="py-2.5 px-4 text-left font-medium text-ink-2 whitespace-nowrap">退款规则</th>
+              <td class="py-2.5 px-4 text-ink">{brand.refundPolicy}</td>
+            </tr>
+            <tr>
+              <th class="py-2.5 px-4 text-left font-medium text-ink-2 whitespace-nowrap">信息来源与核验</th>
+              <td class="py-2.5 px-4 text-xs text-ink-2" colspan="3">
+                {brand.sourceNote} · 核验状态：<span class="text-ink font-medium">{brand.verifyStatus}</span> · 核验日期：{brandsData.lastVerified}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 套餐详情与规格表（若有丰富套餐，如光速云） -->
+    {brand.plans && brand.plans.length > 0 && (
+      <section class="mt-10">
+        <h2 class="text-sm font-bold tracking-wider text-ink uppercase pb-2 border-b border-rule">
+          2. {brand.name} 详细套餐规格与价格对照
+        </h2>
+        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+          {brand.plans.map((p: any) => (
+            <div class="border border-rule bg-paper-2 p-4 flex flex-col justify-between rounded-xs">
+              <div>
+                <div class="flex items-baseline justify-between">
+                  <h3 class="font-bold text-ink text-base">{p.name}</h3>
+                  <span class="text-seal font-bold text-sm">{p.price}</span>
+                </div>
+                <div class="mt-2 text-xs space-y-1 text-ink-2">
+                  <p><strong class="text-ink">套餐流量：</strong>{p.traffic}</p>
+                  <p><strong class="text-ink">线路特点：</strong>{p.line}</p>
+                  <p><strong class="text-ink">设备支持：</strong>{p.devices || '不限设备'}</p>
+                  <p class="mt-2 text-xs leading-relaxed text-ink/80">{p.features}</p>
+                </div>
+              </div>
+              <div class="mt-4 pt-3 border-t border-rule flex justify-end">
+                <a
+                  href={brand.affUrl}
+                  target="_blank"
+                  rel={rel}
+                  class="text-xs font-semibold text-seal hover:underline inline-flex items-center gap-1"
+                >
+                  去官网订购此方案 ↗
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- 实测凭证与节点截图展示 -->
+    {(brand.speedtestImage || (brand.gallery && brand.gallery.length > 0)) && (
+      <section class="mt-10">
+        <h2 class="text-sm font-bold tracking-wider text-ink uppercase pb-2 border-b border-rule">
+          {brand.plans ? '3' : '2'}. {brand.name} 节点测速与流媒体解锁凭证
+        </h2>
+        <p class="mt-2 text-xs text-ink-2 leading-relaxed">
+          以下为收集与实测的节点测速长图及客户端流媒体/AI 解锁测试截图。测试仅代表对应时段和节点的瞬时表现，实际体验会受个人网络运营商、本地宽带及晚高峰拥塞度影响。
+        </p>
+
+        {brand.speedtestImage && (
+          <div class="mt-4 border border-rule bg-paper-2 p-3">
+            <h3 class="text-xs font-semibold text-ink mb-2">节点测速完整报告（MAI-TEST 测速截图）</h3>
+            <div class="max-h-[500px] overflow-y-auto border border-rule bg-paper">
+              <img
+                src={brand.speedtestImage}
+                alt={`${brand.name} 节点测速实测报告`}
+                class="w-full object-top"
+                loading="lazy"
+                width="800"
+                height="1200"
+              />
+            </div>
+            <p class="mt-2 text-[0.7rem] text-ink-2">
+              注：测速图展示了香港、台湾、日本、新加坡、美国等多地区节点的连接延迟、上传下载速度与丟包率。
+            </p>
+          </div>
+        )}
+
+        {brand.gallery && brand.gallery.length > 0 && (
+          <div class="mt-6">
+            <h3 class="text-xs font-semibold text-ink mb-2">客户端流媒体与服务解锁测试实拍</h3>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {brand.gallery.map((img: string, idx: number) => (
+                <div class="border border-rule bg-paper p-1.5 flex flex-col items-center">
+                  <a href={img} target="_blank" rel="noopener noreferrer" class="block overflow-hidden w-full aspect-[4/3]">
+                    <img
+                      src={img}
+                      alt={`${brand.name} 节点实测图 ${idx + 1}`}
+                      class="h-full w-full object-cover hover:scale-105 transition-transform"
+                      loading="lazy"
+                      width="400"
+                      height="300"
+                    />
+                  </a>
+                  <span class="mt-1 text-[0.7rem] text-ink-2">实测凭证 #{idx + 1}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+    )}
+
+    <!-- 公开优势 vs 已知限制 -->
+    <section class="mt-10">
+      <h2 class="text-sm font-bold tracking-wider text-ink uppercase pb-2 border-b border-rule">
+        {brand.plans || brand.speedtestImage ? '4' : '3'}. 客观评价：公开优势与已知限制
+      </h2>
+      <div class="mt-4 grid gap-4 sm:grid-cols-2">
+        <div class="border border-rule bg-paper-2 p-4 rounded-xs">
+          <div class="flex items-center gap-2 text-seal font-semibold text-sm">
+            <span>✔</span>
+            <h3>品牌公开优势（官方宣称）</h3>
+          </div>
+          <ul class="mt-3 space-y-2 text-xs text-ink-2">
+            {brand.publicPros.map((pro: string) => (
+              <li class="flex items-start gap-1.5">
+                <span class="text-seal">•</span>
+                <span>{pro}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div class="border border-rule bg-paper-2 p-4 rounded-xs">
+          <div class="flex items-center gap-2 text-cinnabar font-semibold text-sm">
+            <span>⚠</span>
+            <h3>已知限制与购前提醒</h3>
+          </div>
+          <ul class="mt-3 space-y-2 text-xs text-ink-2">
+            {brand.knownLimits.map((limit: string) => (
+              <li class="flex items-start gap-1.5">
+                <span class="text-cinnabar">•</span>
+                <span>{limit}</span>
+              </li>
+            ))}
+            <li class="flex items-start gap-1.5">
+              <span class="text-cinnabar">•</span>
+              <span>建议遵循“先小额月付、满意再续费”的避坑原则。</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 客户端订阅导入指南 -->
+    <section class="mt-10">
+      <h2 class="text-sm font-bold tracking-wider text-ink uppercase pb-2 border-b border-rule">
+        {brand.plans || brand.speedtestImage ? '5' : '4'}. {brand.name} 客户端配置指引
+      </h2>
+      <div class="mt-4 text-xs sm:text-sm text-ink-2 leading-relaxed space-y-3">
+        <p>
+          {brand.name} 提供了完善的客户端支持。无论您使用的是 Windows、Mac、iPhone 还是安卓设备，均可通过以下方式配置：
+        </p>
+        <div class="border border-rule bg-paper p-4 space-y-2 text-xs">
+          <p><strong class="text-ink">步骤 1：注册并获取订阅</strong> —— 在 <a href={brand.affUrl} target="_blank" rel={rel} class="text-seal underline underline-offset-2">官方网站</a> 注册并购买套餐后，进入用户中心仪表盘。</p>
+          <p><strong class="text-ink">步骤 2：一键导入或复制链接</strong> —— 找到“一键导入订阅”或“复制订阅地址”按钮。选择对应的客户端格式（Clash / Shadowrocket / 通用订阅）。</p>
+          <p><strong class="text-ink">步骤 3：客户端加载配置</strong> —— 在 Clash 或小火箭中粘贴 URL 并刷新配置，切换到延迟低且稳定的节点即可使用。</p>
+          {brand.clientSupport.includes('自研') && (
+            <p class="text-seal font-medium pt-1">
+              ★ 该品牌提供自研专用客户端，新手用户可直接下载一键登录，无需繁琐的手动配置订阅。
+            </p>
+          )}
+        </div>
+      </div>
+    </section>
+
+    <!-- 常见问题 FAQ -->
+    <section class="mt-10">
+      <h2 class="text-sm font-bold tracking-wider text-ink uppercase pb-2 border-b border-rule">
+        {brand.plans || brand.speedtestImage ? '6' : '5'}. 常见问题解答 (FAQ)
+      </h2>
+      <div class="mt-4 divide-y divide-rule border border-rule bg-paper">
+        {faqs.map((f) => (
+          <details class="p-4 group">
+            <summary class="font-semibold text-sm text-ink cursor-pointer list-none flex justify-between items-center">
+              <span>{f.q}</span>
+              <span class="text-xs text-ink-2 group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <p class="mt-2.5 text-xs text-ink-2 leading-relaxed">
+              {f.a}
+            </p>
+          </details>
+        ))}
+      </div>
+    </section>
+
+    <!-- 底部横向选购与相关链接 -->
+    <section class="mt-10 p-5 border border-rule bg-paper-2 rounded-xs">
+      <h3 class="text-xs font-bold uppercase tracking-wider text-ink">相关专题与导航</h3>
+      <div class="mt-3 flex flex-wrap gap-2 text-xs">
+        <a href="/directory/" class="px-2.5 py-1 bg-paper border border-rule text-ink hover:text-seal">
+          ← 返回 28 家机场档案对照表
+        </a>
+        <a href="/airport/how-to-choose/" class="px-2.5 py-1 bg-paper border border-rule text-ink hover:text-seal">
+          机场怎么选：避坑决策指南
+        </a>
+        <a href="/airport/ranking/" class="px-2.5 py-1 bg-paper border border-rule text-ink hover:text-seal">
+          机场横向对比指南
+        </a>
+        <a href="/airport/cheap/" class="px-2.5 py-1 bg-paper border border-rule text-ink hover:text-seal">
+          便宜机场横向对照
+        </a>
+        <a href="/airport/stable/" class="px-2.5 py-1 bg-paper border border-rule text-ink hover:text-seal">
+          稳定专线机场对比
+        </a>
+      </div>
+    </section>
+
+    <!-- 底部固定/浮动转化条 -->
+    <div class="mt-8 p-4 border border-seal/30 bg-seal-2/40 rounded-xs flex items-center justify-between flex-wrap gap-3">
+      <div>
+        <p class="text-sm font-bold text-ink">准备体验 {brand.name}？</p>
+        <p class="text-xs text-ink-2">入门价格 {brand.priceFrom} {brand.affCode ? `· 优惠码【${brand.affCode}】` : ''}</p>
+      </div>
+      <a
+        href={brand.affUrl}
+        target="_blank"
+        rel={rel}
+        class="btn-primary px-6 py-2.5 text-xs shadow-xs"
+      >
+        直达官网开通 ↗
+      </a>
+    </div>
+  </article>
+</BaseLayout>

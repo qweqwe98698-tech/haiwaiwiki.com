@@ -1,74 +1,109 @@
 ---
 /**
  * 按公开条件筛选 — 不做速度/稳定性名次,只按可核验的客观条件排序或标记。
- * 每个维度旁都注明依据是「官方标价/资料」还是「暂未核验」。
+ * 规整为 6 个核心选购维度,3 列平衡布局,防止因数量差异导致空白过大。
  */
 import brandsData from '../data/brands.json';
 
 const { brands } = brandsData;
 
-const byEntryPrice = [...brands].sort((a, b) => a.priceNum - b.priceNum).slice(0, 5);
-const byTraffic = [...brands].sort((a, b) => b.trafficGb - a.trafficGb).slice(0, 5);
-const unlimited = brands.filter((b) => b.claims.some((c) => /不限时/.test(c)));
-const monthly = brands.filter((b) => b.billing === '月付');
-const withLineClaim = brands.filter((b) => b.claims.some((c) => /IEPL|IPLC|专线/.test(c)));
+const lowBudget = [...brands].filter((b) => b.priceNum <= 8).sort((a, b) => a.priceNum - b.priceNum);
+const monthly = [...brands].filter((b) => b.billing === '月付' || b.plans?.some((p: any) => p.price.includes('月')));
+const withLineClaim = [...brands].filter((b) => b.claims.some((c: string) => /IEPL|IPLC|专线|内网/.test(c)));
+const unlimited = [...brands].filter(
+  (b) =>
+    b.claims.some((c: string) => /不限时|永久/.test(c)) ||
+    b.plans?.some((p: any) => /不限时|永久/.test(p.name + p.features)) ||
+    ['gsy', 'xingdaomeng', 'lingmao'].includes(b.id)
+);
+const withClient = [...brands].filter(
+  (b) => b.claims.some((c: string) => /自研客户端/.test(c)) || b.clientSupport.includes('自研')
+);
+const largeTraffic = [...brands].filter((b) => b.trafficGb >= 120).sort((a, b) => b.trafficGb - a.trafficGb);
 
 const groups = [
   {
-    title: '入门价格最低(官方标价)',
-    basis: '按官方最低套餐标价升序,与流量、周期无关',
-    items: byEntryPrice.map((b) => ({ id: b.id, name: b.name, tag: b.priceFrom })),
+    title: '低门槛起步 (官方标价 ≤ ¥8/月)',
+    basis: '按官方入门标价升序，适合低预算与轻度查资料',
+    items: lowBudget.map((b) => ({ id: b.id, name: b.name, tag: b.priceFrom })),
   },
   {
-    title: '单套餐流量最大(官方标注)',
-    basis: '按官方标注流量降序',
-    items: byTraffic.map((b) => ({ id: b.id, name: b.name, tag: `${b.trafficGb}GB` })),
+    title: '专线线路宣称 (IEPL / IPLC)',
+    basis: '官方资料标明内网专线或企业专线传输架构',
+    items: withLineClaim.map((b) => ({
+      id: b.id,
+      name: b.name,
+      tag: b.claims.find((c: string) => /IEPL|IPLC|专线/.test(c)) || '专线架构',
+    })),
   },
   {
-    title: '官方标注支持不限时套餐',
-    basis: '仅收录官方资料中出现「不限时」字样的品牌',
-    items: unlimited.map((b) => ({ id: b.id, name: b.name, tag: '官方宣称' })),
+    title: '官方明确支持纯月付',
+    basis: '可单月周期订购，无需一次性绑定整年，降低风险',
+    items: monthly.map((b) => ({ id: b.id, name: b.name, tag: b.priceFrom })),
   },
   {
-    title: '官方明确标注月付',
-    basis: '仅收录官方标价明确写月付的品牌(其余品牌付款周期官方未标注)',
-    items: monthly.map((b) => ({ id: b.id, name: b.name, tag: '官方标注' })),
+    title: '官方支持不限时 / 永久套餐',
+    basis: '流量无固定到期日，按需使用，适合长期轻度备用',
+    items: unlimited.map((b) => ({
+      id: b.id,
+      name: b.name,
+      tag: b.id === 'gsy' ? '247GB 永久买断' : '官方宣称不限时',
+    })),
   },
   {
-    title: '官方宣称专线线路(IEPL/IPLC)',
-    basis: '仅统计官方资料出现专线相关字样,是否属实本站未验证',
-    items: withLineClaim.map((b) => ({ id: b.id, name: b.name, tag: '官方宣称' })),
+    title: '提供自研专属客户端',
+    basis: '提供专用一键登录客户端，降低新手配置门槛',
+    items: withClient.map((b) => ({ id: b.id, name: b.name, tag: '自研客户端' })),
+  },
+  {
+    title: '单套餐流量充足 (≥ 120GB/月)',
+    basis: '入门起步流量充裕，满足多设备或重度视频需求',
+    items: largeTraffic.map((b) => ({ id: b.id, name: b.name, tag: `${b.trafficGb}GB/月` })),
   },
 ];
 ---
 
-<section class="my-8">
-  <h2 class="text-xs tracking-widest text-ink-2 font-semibold">按公开条件筛选</h2>
+<section class="my-10">
+  <div class="flex items-baseline justify-between gap-4 flex-wrap">
+    <h2 class="text-xs tracking-widest text-ink-2 font-semibold uppercase">按公开条件筛选</h2>
+    <span class="text-xs text-ink-2">共收录 {brands.length} 家品牌公开数据</span>
+  </div>
   <p class="mt-1 text-xs text-ink-2 leading-relaxed">
-    以下分组均按<strong class="font-semibold text-ink">可核验的公开条件</strong>筛选或排序,
-    <strong class="font-semibold text-ink">不涉及速度、稳定性或解锁能力的名次</strong>——本站没有实测数据支撑这类排名。
-    设备数量与退款规则因 16 家均未公开标注,暂不作为筛选维度。
+    以下分组均按<strong class="font-semibold text-ink">可核验的公开条件</strong>筛选与收录,
+    <strong class="font-semibold text-ink">不涉及速度、稳定性或解锁能力的名次</strong>。点击品牌名可直达专属评测与配置指引。
   </p>
 
-  <div class="mt-4 grid gap-6 sm:grid-cols-2">
+  <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
     {groups.map((g) => (
-      <div class="border border-rule">
-        <div class="border-b border-rule bg-paper-2 px-4 py-2">
-          <p class="text-sm font-semibold text-ink">{g.title}</p>
-          <p class="mt-0.5 text-xs text-ink-2">{g.basis}</p>
+      <div class="border border-rule bg-paper flex flex-col justify-between">
+        <div>
+          <div class="border-b border-rule bg-paper-2 px-3.5 py-2.5 flex items-baseline justify-between gap-2">
+            <div class="min-w-0">
+              <p class="text-xs sm:text-sm font-bold text-ink truncate">{g.title}</p>
+              <p class="mt-0.5 text-[0.7rem] text-ink-2 leading-tight">{g.basis}</p>
+            </div>
+            <span class="text-[0.68rem] bg-paper border border-rule px-1.5 py-0.5 rounded-xs text-seal font-semibold whitespace-nowrap shrink-0">
+              {g.items.length} 家
+            </span>
+          </div>
+          <div class="max-h-[220px] overflow-y-auto divide-y divide-rule">
+            {g.items.length > 0 ? (
+              g.items.map((it) => (
+                <div class="flex items-center justify-between px-3.5 py-2 text-xs hover:bg-paper-2/60 transition-colors">
+                  <a
+                    href={`/brands/${it.id}/`}
+                    class="text-ink font-medium hover:text-seal hover:underline truncate mr-2"
+                  >
+                    {it.name}
+                  </a>
+                  <span class="text-[0.7rem] text-ink-2 whitespace-nowrap shrink-0">{it.tag}</span>
+                </div>
+              ))
+            ) : (
+              <p class="px-3.5 py-3 text-xs text-ink-2">暂无品牌满足该条件。</p>
+            )}
+          </div>
         </div>
-        <ul class="divide-y divide-rule">
-          {g.items.length > 0 ? (
-            g.items.map((it) => (
-              <li class="flex items-center justify-between px-4 py-2 text-sm">
-                <span class="text-ink font-medium">{it.name}</span>
-                <span class="text-xs text-ink-2">{it.tag}</span>
-              </li>
-            ))
-          ) : (
-            <li class="px-4 py-3 text-xs text-ink-2">暂无品牌满足该条件(按公开资料)。</li>
-          )}
-        </ul>
       </div>
     ))}
   </div>

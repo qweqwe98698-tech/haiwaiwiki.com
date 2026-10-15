@@ -23,11 +23,10 @@ const jsonLd = [
 
   <div class="mt-10 max-w-[820px]">
     <p class="index-num text-3xl">02</p>
-    <h1 class="mt-2 text-2xl font-bold">机场档案:16 家服务商公开信息对照</h1>
+    <h1 class="mt-2 text-2xl font-bold">机场档案:{brandsData.totalCount || 28} 家服务商公开信息对照</h1>
     <p class="mt-4 text-[0.95rem] text-ink-2 leading-relaxed">
       本页收录各品牌<strong class="text-ink">官网或公开页面能核验的信息</strong>:起步价格、套餐流量、
-      付款周期、官方宣称的线路类型与客户端支持。<strong class="text-ink">不提供速度、稳定性或解锁能力的排名</strong>——
-      本站没有对这 16 家做过同条件的实测,给不出有依据的名次。
+      付款周期、官方宣称的线路类型与客户端支持。支持点击各品牌名称进入<strong class="text-ink">独立评测与详情页</strong>查看专属优惠码、详细套餐与配置指引。<strong class="text-ink">不提供速度、稳定性或解锁能力的虚假排名</strong>——
       挑选思路请配合<a href="/airport/how-to-choose/">机场怎么选</a>使用。
     </p>
     <p class="mt-3 text-xs text-ink-2">
@@ -36,7 +35,7 @@ const jsonLd = [
     </p>
   </div>
 
-  <div class="mt-6 max-w-[820px]">
+  <div class="mt-6 max-w-[1040px]">
     <FeaturedBrands />
   </div>
 
@@ -45,16 +44,16 @@ const jsonLd = [
     <BrandFactsTable />
   </section>
 
-  <div class="max-w-[820px]">
+  <div class="max-w-[1040px]">
     <BrandFilters />
   </div>
 
-  <section class="mt-12 max-w-[820px]">
+  <section class="mt-12 max-w-[1040px]">
     <h2 class="text-xs tracking-widest text-ink-2 font-semibold">价格与宣称对照图</h2>
     <p class="mt-1 text-xs text-ink-2">
       下面两张图的数据分别来自官方标价的算术折算与官方宣称的逐字记录。
-      本站没有实测这 16 家的速度、延迟或解锁能力,因此不提供测速图、解锁评分或质量排名——
-      理由写在<a href="/about/editorial/" class="underline underline-offset-2">编辑规范</a>里。
+      本站没有实测全部 28 家的速度、延迟或解锁能力,因此不提供虚假测速图、解锁评分或质量排名——
+      理由写在<a href="/about/editorial/" class="underline underline-offset-2">编辑规范</a>里。各品牌实测节点图请进单品牌详情页查阅。
     </p>
     <PriceGbChart />
     <ClaimsMatrix />
